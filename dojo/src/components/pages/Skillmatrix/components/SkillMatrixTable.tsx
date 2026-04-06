@@ -1006,11 +1006,11 @@ const SkillMatrixTable: React.FC<SkillMatrixTableProps> = ({
                                                                 <div className="flex items-center justify-center">
                                                                     <SkillDisplay level={skillLevel} />
                                                                 </div>
-                                                                {updatedDate && (
+                                                                {/* {updatedDate && (
                                                                     <div className="text-xs text-gray-500 font-mono leading-tight">
                                                                         {updatedDate}
                                                                     </div>
-                                                                )}
+                                                                )} */}
                                                             </div>
                                                         </td>
                                                     );

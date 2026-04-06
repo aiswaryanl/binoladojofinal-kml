@@ -3166,22 +3166,49 @@ class OperatorCardSkillSerializer(serializers.ModelSerializer):
 from rest_framework import serializers
 from .models import Score,TrainingAttendance
 
+# class CardScoreSerializer(serializers.ModelSerializer):
+#     employee_name = serializers.CharField(source='employee.first_name', read_only=True)
+#     test_name = serializers.CharField(source='test.test_name', read_only=True)
+
+#     class Meta:
+#         model = Score
+#         fields = [
+#             'id',
+#             'employee_name',
+#             'test_name',     # just use directly if it's a model field
+#             'marks',
+#             'percentage',    # must exist in model
+#             'passed',        # must exist in model
+#             'test_date',
+#             'created_at'
+#         ]
+
 class CardScoreSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.first_name', read_only=True)
-    test_name = serializers.CharField(source='test.test_name', read_only=True)
+    # Change test_name to a SerializerMethodField
+    test_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Score
         fields = [
             'id',
             'employee_name',
-            'test_name',     # just use directly if it's a model field
+            'test_name',
             'marks',
-            'percentage',    # must exist in model
-            'passed',        # must exist in model
+            'percentage',
+            'passed',
             'test_date',
             'created_at'
         ]
+
+    def get_test_name(self, obj):
+        if obj.test and obj.test.test_name:
+            name = obj.test.test_name
+            # Splits "Individual_Test_2026-04-06" and takes everything except the last part
+            parts = name.rsplit('_', 1) 
+            return parts[0]
+        return "Assessment"
+
 
 from rest_framework import serializers
 from .models import RescheduledSession  # adjust import path

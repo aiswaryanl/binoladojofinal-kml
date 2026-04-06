@@ -135,7 +135,7 @@ export const UserTableRow: React.FC<UserTableRowProps> = ({ user, onRowClick, on
         {hasChecks ? (
           <div>
             <div className="font-medium">{formatDate(latestCheck.check_date)}</div>
-            <div className="text-xs text-gray-500">{formatTime(latestCheck.check_date)}</div>
+            {/* <div className="text-xs text-gray-500">{formatTime(latestCheck.check_date)}</div> */}
           </div>
         ) : (
           <span className="text-gray-400">No checks</span>
@@ -146,7 +146,7 @@ export const UserTableRow: React.FC<UserTableRowProps> = ({ user, onRowClick, on
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
         <div>
           <div className="font-medium">{formatDate(user.created_at)}</div>
-          <div className="text-xs text-gray-500">{formatTime(user.created_at)}</div>
+          {/* <div className="text-xs text-gray-500">{formatTime(user.created_at)}</div> */}
         </div>
       </td>
 
