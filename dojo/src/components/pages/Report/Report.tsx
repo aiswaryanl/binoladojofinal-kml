@@ -331,7 +331,7 @@ const Report = () => {
       setDownloadSuccess(false);
 
       // Call the API endpoint
-      const response = await fetch('http://192.168.2.51:8000/employees-excel/export_excel/');
+      const response = await fetch('http://127.0.0.1:8000/employees-excel/export_excel/');
       const blob = await response.blob();
 
 

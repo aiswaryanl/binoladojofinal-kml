@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import { FileText, Image as ImageIcon, Link as LinkIcon } from "lucide-react";
 
-const API_BASE = 'http://192.168.2.51:8000';
+const API_BASE = 'http://127.0.0.1:8000';
 
 interface Props {
   batch: any;

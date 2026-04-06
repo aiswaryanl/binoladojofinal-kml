@@ -89,7 +89,7 @@
 //       }
 
 //       // This URL calls the correct API endpoint that you fixed
-//       const url = `http://192.168.2.51:8000/production-data/weekly-summary/?${params.toString()}`;
+//       const url = `http://127.0.0.1:8000/production-data/weekly-summary/?${params.toString()}`;
 //       const response = await fetch(url);
 
 //       if (!response.ok) {
@@ -142,7 +142,7 @@
 //         if (factoryId) params.append('factory_id', factoryId.toString());
 //         if (departmentId && departmentId !== 'all') params.append('department_type', String(departmentId));
 //         if (selectedStation) params.append('station_id', selectedStation.toString());
-//         const url = `http://192.168.2.51:8000/employees/?${params.toString()}`;
+//         const url = `http://127.0.0.1:8000/employees/?${params.toString()}`;
 //         const response = await fetch(url);
 //         if (!response.ok) throw new Error(`Failed to fetch employees: ${response.status}`);
 //         const employeesData = await response.json();
@@ -455,7 +455,7 @@ const OperatorStatsRedirect: React.FC<Props> = ({
       if (sublineId) params.append('subline', sublineId.toString());
       if (stationId) params.append('station', stationId.toString());
 
-      const url = `http://192.168.2.51:8000/production-data/weekly-summary/?${params.toString()}`;
+      const url = `http://127.0.0.1:8000/production-data/weekly-summary/?${params.toString()}`;
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -501,7 +501,7 @@ const OperatorStatsRedirect: React.FC<Props> = ({
       if (sublineId) params.append('subline_id', sublineId.toString());
       if (stationId) params.append('station_id', stationId.toString());
 
-      const url = `http://192.168.2.51:8000/employees/?${params.toString()}`;
+      const url = `http://127.0.0.1:8000/employees/?${params.toString()}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Failed to fetch employees: ${response.status}`);
       const employeesData = await response.json();

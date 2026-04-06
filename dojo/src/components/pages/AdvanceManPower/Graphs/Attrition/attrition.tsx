@@ -123,7 +123,7 @@
 //   selectedYear?: number; 
 // }
 
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // // Financial Year Configuration: April to March
 // const financialYearConfig = [
@@ -298,7 +298,7 @@
 //   selectedYear?: number; 
 // }
 
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // // Financial Year Configuration: April to March
 // const financialYearConfig = [
@@ -471,7 +471,7 @@
 //   selectedYear?: number;
 // }
 
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // // Financial Year months (April → March)
 // const financialYearConfig = [
@@ -678,7 +678,7 @@ interface AttritionProps {
   selectedYear?: number;
 }
 
-const API_BASE_URL = "http://192.168.2.51:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 // Financial Year months (April → March)
 const financialYearConfig = [

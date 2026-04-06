@@ -42,7 +42,7 @@ export default function RescheduledSessionList() {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [markingSession, setMarkingSession] = useState<RescheduledSession | null>(null);
 
-  const API_BASE = import.meta.env.VITE_API_URL || 'http://192.168.2.51:8000';
+  const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
 
   const isAttendanceAllowed = (session: RescheduledSession): { allowed: boolean; reason?: string } => {
     if (session.attendance_marked) return { allowed: false, reason: 'Already marked' };

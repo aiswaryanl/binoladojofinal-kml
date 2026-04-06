@@ -33,7 +33,7 @@
 // }
 
 // async function fetchEmployeeDetails(empId: string) {
-//   const response = await fetch(`http://192.168.2.51:8000/mastertable/?emp_id=${empId}`);
+//   const response = await fetch(`http://127.0.0.1:8000/mastertable/?emp_id=${empId}`);
 //   if (!response.ok) throw new Error('Failed to fetch employee details');
 //   const data = await response.json();
 //   if (!data.length) throw new Error('Employee not found');
@@ -45,7 +45,7 @@
 
 
 // async function fetchEmployeeEvaluations(empId: string) {
-//   const response = await fetch(`http://192.168.2.51:8000/productivityevaluations/?employee=${empId}`);
+//   const response = await fetch(`http://127.0.0.1:8000/productivityevaluations/?employee=${empId}`);
 //   if (!response.ok) throw new Error('Failed to fetch evaluations');
 //   return await response.json();
 // }
@@ -54,7 +54,7 @@
 
 // async function fetchEmployeeIdByEmpId(empId) {
 //   console.log('Fetching employee ID for empId:', empId);
-//   const response = await fetch(`http://192.168.2.51:8000/mastertable/?${empId}`);
+//   const response = await fetch(`http://127.0.0.1:8000/mastertable/?${empId}`);
 //   if (!response.ok) throw new Error('Cannot fetch employee');
 //   const employees = await response.json();
 //   console.log('Full employee response:', JSON.stringify(employees, null, 2));
@@ -643,7 +643,7 @@
 //         remarks: productivityModule.remarks || '',
 //       });
 
-//       const evaluationResponse = await fetch('http://192.168.2.51:8000/productivityevaluations/', {
+//       const evaluationResponse = await fetch('http://127.0.0.1:8000/productivityevaluations/', {
 //         method: 'POST',
 //         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
 //         body: JSON.stringify({
@@ -681,7 +681,7 @@
 //       const evaluationId = evaluation.id;
 
 //       for (const sequence of productivityModule.sequences) {
-//         const sequenceResponse = await fetch('http://192.168.2.51:8000/sequences/', {
+//         const sequenceResponse = await fetch('http://127.0.0.1:8000/sequences/', {
 //           method: 'POST',
 //           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
 //           body: JSON.stringify({
@@ -710,7 +710,7 @@
 //       }
 
 //       const calculateResponse = await fetch(
-//         `http://192.168.2.51:8000/productivityevaluations/${evaluationId}/calculate_results/`,
+//         `http://127.0.0.1:8000/productivityevaluations/${evaluationId}/calculate_results/`,
 //         { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' } }
 //       );
 
@@ -1125,7 +1125,7 @@ interface LocationState {
 }
 
 async function fetchEmployeeDetails(empId: string) {
-  const response = await fetch(`http://192.168.2.51:8000/mastertable/?emp_id=${empId}`);
+  const response = await fetch(`http://127.0.0.1:8000/mastertable/?emp_id=${empId}`);
   if (!response.ok) throw new Error('Failed to fetch employee details');
   const data = await response.json();
   if (!data.length) throw new Error('Employee not found');
@@ -1133,14 +1133,14 @@ async function fetchEmployeeDetails(empId: string) {
 }
 
 async function fetchEmployeeEvaluations(empId: string) {
-  const response = await fetch(`http://192.168.2.51:8000/productivityevaluations/?employee=${empId}`);
+  const response = await fetch(`http://127.0.0.1:8000/productivityevaluations/?employee=${empId}`);
   if (!response.ok) throw new Error('Failed to fetch evaluations');
   return await response.json();
 }
 
 async function fetchEmployeeIdByEmpId(empId) {
   console.log('Fetching employee ID for empId:', empId);
-  const response = await fetch(`http://192.168.2.51:8000/mastertable/?${empId}`);
+  const response = await fetch(`http://127.0.0.1:8000/mastertable/?${empId}`);
   if (!response.ok) throw new Error('Cannot fetch employee');
   const employees = await response.json();
   console.log('Full employee response:', JSON.stringify(employees, null, 2));
@@ -1729,7 +1729,7 @@ function ProductivitySheet() {
         remarks: productivityModule.remarks || '',
       });
 
-      const evaluationResponse = await fetch('http://192.168.2.51:8000/productivityevaluations/', {
+      const evaluationResponse = await fetch('http://127.0.0.1:8000/productivityevaluations/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
@@ -1767,7 +1767,7 @@ function ProductivitySheet() {
       const evaluationId = evaluation.id;
 
       for (const sequence of productivityModule.sequences) {
-        const sequenceResponse = await fetch('http://192.168.2.51:8000/sequences/', {
+        const sequenceResponse = await fetch('http://127.0.0.1:8000/sequences/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify({
@@ -1796,7 +1796,7 @@ function ProductivitySheet() {
       }
 
       const calculateResponse = await fetch(
-        `http://192.168.2.51:8000/productivityevaluations/${evaluationId}/calculate_results/`,
+        `http://127.0.0.1:8000/productivityevaluations/${evaluationId}/calculate_results/`,
         { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' } }
       );
 

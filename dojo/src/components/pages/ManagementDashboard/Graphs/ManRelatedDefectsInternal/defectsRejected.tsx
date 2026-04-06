@@ -14,7 +14,7 @@
 // //   stationId?: string;
 // // }
 
-// // const API_BASE_URL = "http://192.168.2.51:8000";
+// // const API_BASE_URL = "http://127.0.0.1:8000";
 
 // // const DefectsRejected: React.FC<DefectsRejectedProps> = ({
 // //   hqId, factoryId, departmentId, lineId, sublineId, stationId
@@ -143,7 +143,7 @@
 //     stationId?: string;
 // }
 
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // const DefectsRejected: React.FC<DefectsRejectedProps> = ({
 //     hqId, factoryId, departmentId, lineId, sublineId, stationId
@@ -293,7 +293,7 @@
 //   financialYear: string; // NEW
 // }
 
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // const DefectsRejected: React.FC<DefectsRejectedProps> = ({
 //   hqId, factoryId, departmentId, lineId, sublineId, stationId, financialYear
@@ -446,7 +446,7 @@ interface DefectsRejectedProps {
   financialYear: string; // NEW
 }
 
-const API_BASE_URL = "http://192.168.2.51:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 const DefectsRejected: React.FC<DefectsRejectedProps> = ({
   hqId, factoryId, departmentId, lineId, sublineId, stationId, financialYear

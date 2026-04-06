@@ -31,7 +31,7 @@ type HierarchyStructure = {
   };
 };
 
-const API_BASE_URL = 'http://192.168.2.51:8000';
+const API_BASE_URL = 'http://127.0.0.1:8000';
 const AUTO_DEPT = 'Auto Department';
 const AUTO_LINE = 'Auto Line';
 const AUTO_SUBLINE = 'Auto SubLine';
@@ -1439,7 +1439,7 @@ export default Planning;
 //   };
 // };
 
-// const API_BASE_URL = 'http://192.168.2.51:8000';
+// const API_BASE_URL = 'http://127.0.0.1:8000';
 // const AUTO_DEPT = 'Auto Department';
 // const AUTO_LINE = 'Auto Line';
 // const AUTO_SUBLINE = 'Auto SubLine';

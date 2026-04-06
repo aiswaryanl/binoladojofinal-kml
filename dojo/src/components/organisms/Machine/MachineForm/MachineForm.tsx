@@ -85,8 +85,8 @@ const MachineForm: React.FC<Props> = ({
       const possibleBaseUrls = [
         '/api',
         '',
-        'http://192.168.2.51:8000',
-        'http://192.168.2.51:8000'
+        'http://127.0.0.1:8000',
+        'http://127.0.0.1:8000'
       ];
 
       let response;

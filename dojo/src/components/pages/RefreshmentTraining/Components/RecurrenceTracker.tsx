@@ -10,7 +10,7 @@ import {
   TrendingUp,
 } from "lucide-react"
 
-const APIBASE = "http://192.168.2.51:8000"
+const APIBASE = "http://127.0.0.1:8000"
 
 interface RecurrenceInfo {
   id: number

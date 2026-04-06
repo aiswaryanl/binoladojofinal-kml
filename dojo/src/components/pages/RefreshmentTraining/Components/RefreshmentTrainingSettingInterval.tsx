@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Settings, Clock, Save, AlertCircle, CheckCircle } from 'lucide-react';
 
-const API_BASE = 'http://192.168.2.51:8000';
+const API_BASE = 'http://127.0.0.1:8000';
 
 interface RecurrenceInterval {
   id: number;

@@ -6,7 +6,7 @@ import axios from 'axios';
 // ... your component code
 // import Nav from "../../../../HomeNav/nav";
 
-const API_BASE = 'http://192.168.2.51:8000';
+const API_BASE = 'http://127.0.0.1:8000';
 
 // --- Sho Interfaces (Updated) ---
 interface ShoMainTopic {

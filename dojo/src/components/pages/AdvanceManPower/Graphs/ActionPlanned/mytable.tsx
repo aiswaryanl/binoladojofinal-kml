@@ -18,7 +18,7 @@
 //   // --- API CALLS ---
 //   const fetchData = async () => {
 //     try {
-//       const response = await axios.get("http://192.168.2.51:8000/api/actionsrejection/");
+//       const response = await axios.get("http://127.0.0.1:8000/api/actionsrejection/");
 //       setTableData(response.data);
 //     } catch (error) {
 //       console.error("Error fetching data", error);
@@ -40,9 +40,9 @@
 
 //     try {
 //       if (editingId) {
-//         await axios.put(`http://192.168.2.51:8000/api/actionsrejection/${editingId}/`, formData);
+//         await axios.put(`http://127.0.0.1:8000/api/actionsrejection/${editingId}/`, formData);
 //       } else {
-//         await axios.post("http://192.168.2.51:8000/api/actionsrejection/", formData);
+//         await axios.post("http://127.0.0.1:8000/api/actionsrejection/", formData);
 //       }
 //       fetchData();
 //       closeModal();
@@ -54,7 +54,7 @@
 //   const handleDelete = async () => {
 //     if (window.confirm("Are you sure you want to delete this?")) {
 //       try {
-//         await axios.delete(`http://192.168.2.51:8000/api/actionsrejection/${editingId}/`);
+//         await axios.delete(`http://127.0.0.1:8000/api/actionsrejection/${editingId}/`);
 //         fetchData();
 //         closeModal();
 //       } catch (error) {
@@ -289,7 +289,7 @@ const MyTable = () => {
   // --- API CALLS ---
   const fetchData = async () => {
     try {
-      const response = await axios.get("http://192.168.2.51:8000/api/actionsrejection/");
+      const response = await axios.get("http://127.0.0.1:8000/api/actionsrejection/");
       setTableData(response.data);
     } catch (error) {
       console.error("Error fetching data", error);
@@ -311,9 +311,9 @@ const MyTable = () => {
 
     try {
       if (editingId) {
-        await axios.put(`http://192.168.2.51:8000/api/actionsrejection/${editingId}/`, formData);
+        await axios.put(`http://127.0.0.1:8000/api/actionsrejection/${editingId}/`, formData);
       } else {
-        await axios.post("http://192.168.2.51:8000/api/actionsrejection/", formData);
+        await axios.post("http://127.0.0.1:8000/api/actionsrejection/", formData);
       }
       fetchData();
       closeModal();
@@ -325,7 +325,7 @@ const MyTable = () => {
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this?")) {
       try {
-        await axios.delete(`http://192.168.2.51:8000/api/actionsrejection/${editingId}/`);
+        await axios.delete(`http://127.0.0.1:8000/api/actionsrejection/${editingId}/`);
         fetchData();
         closeModal();
       } catch (error) {

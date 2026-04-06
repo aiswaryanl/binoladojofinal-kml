@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 
-const API_BASE_URL = "http://192.168.2.51:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 interface Employee {
   emp_id: string;

@@ -12,7 +12,7 @@ const Levels: React.FC = () => {
   const [editId, setEditId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const API_URL = "http://192.168.2.51:8000/levels/"; // 🔗 Update if your API runs elsewhere
+  const API_URL = "http://127.0.0.1:8000/levels/"; // 🔗 Update if your API runs elsewhere
 
   // Fetch all levels
   const fetchLevels = async () => {

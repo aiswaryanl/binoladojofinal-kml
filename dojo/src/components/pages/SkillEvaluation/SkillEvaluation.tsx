@@ -8,7 +8,7 @@
 // // --- AXIOS API CONFIGURATION ---
 // // ====================================================================================
 // const api = axios.create({
-//     baseURL: "http://192.168.2.51:8000/", // Make sure this is your correct API URL
+//     baseURL: "http://127.0.0.1:8000/", // Make sure this is your correct API URL
 //     headers: { 'Content-Type': 'application/json' }
 // });
 
@@ -328,7 +328,7 @@ import axios from 'axios';
 // --- AXIOS API CONFIGURATION ---
 // ====================================================================================
 const api = axios.create({
-    baseURL: "http://192.168.2.51:8000/",
+    baseURL: "http://127.0.0.1:8000/",
     headers: { 'Content-Type': 'application/json' }
 });
 

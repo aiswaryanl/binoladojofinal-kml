@@ -52,7 +52,7 @@ const ShokuchouExamResult: React.FC = () => {
         const headers = token ? { 'Authorization': `Token ${token}` } : {};
 
         const response = await axios.get<ShokuchouExamResult[]>(
-          'http://192.168.2.51:8000/shokuchou/results/', // Your API endpoint
+          'http://127.0.0.1:8000/shokuchou/results/', // Your API endpoint
           { headers }
         );
         setResults(response.data);

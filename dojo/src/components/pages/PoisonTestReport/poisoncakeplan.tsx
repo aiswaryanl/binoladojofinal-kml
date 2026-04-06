@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 // ═══════════════════════════════════════════════════════════════
 // API CONFIGURATION
 // ═══════════════════════════════════════════════════════════════
-const API_BASE_URL = "http://192.168.2.51:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
 const API = {
   POISON_TESTS:        `${API_BASE_URL}/poison-cake-tests/`,
   RECURRING_SCHEDULES: `${API_BASE_URL}/recurring-schedules/`,

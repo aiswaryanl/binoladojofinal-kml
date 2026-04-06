@@ -137,7 +137,7 @@ interface RawQuestionPaper {
 // ==================================================================================
 // API SERVICE
 // ==================================================================================
-const API_BASE_URL = 'http://192.168.2.51:8000/';
+const API_BASE_URL = 'http://127.0.0.1:8000/';
 
 const apiService = {
   async apiCall(endpoint: string, options: RequestInit = {}) {

@@ -3,7 +3,7 @@
 
 // // // ### Configure axios with base URL
 // // const api = axios.create({
-// //   baseURL: 'http://192.168.2.51:8000',
+// //   baseURL: 'http://127.0.0.1:8000',
 // //   headers: { 'Content-Type': 'application/json' },
 // // });
 
@@ -293,7 +293,7 @@
 
 // // ### Configure axios with base URL
 // const api = axios.create({
-//   baseURL: 'http://192.168.2.51:8000',
+//   baseURL: 'http://127.0.0.1:8000',
 //   headers: { 'Content-Type': 'application/json' },
 // });
 
@@ -669,7 +669,7 @@ import axios from 'axios';
 // ... (All your existing interfaces and constants remain the same) ...
 // ### Configure axios with base URL
 const api = axios.create({
-  baseURL: 'http://192.168.2.51:8000',
+  baseURL: 'http://127.0.0.1:8000',
   headers: { 'Content-Type': 'application/json' },
 });
 

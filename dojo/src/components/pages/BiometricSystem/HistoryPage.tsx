@@ -31,7 +31,7 @@ const AttendanceHistoryPage: React.FC = () => {
   const fetchHistory = async () => {
     setIsLoading(true);
     try {
-      const res = await axios.get(`http://192.168.2.51:8000/api/attendance-db/?date=${selectedDate}`);
+      const res = await axios.get(`http://127.0.0.1:8000/api/attendance-db/?date=${selectedDate}`);
       setRecords(res.data.logs);
     } catch (err) {
       console.error("Failed to fetch history", err);
@@ -282,7 +282,7 @@ export default AttendanceHistoryPage;
 //   const fetchHistory = async () => {
 //     setIsLoading(true);
 //     try {
-//       const res = await axios.get(`http://192.168.2.51:8000/api/attendance-db/?date=${selectedDate}`);
+//       const res = await axios.get(`http://127.0.0.1:8000/api/attendance-db/?date=${selectedDate}`);
 //       setRecords(res.data.logs);
 //     } catch (err) {
 //       console.error("Failed to fetch history", err);

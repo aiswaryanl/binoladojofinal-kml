@@ -83,7 +83,7 @@
 //   useEffect(() => {
 //     const fetchHierarchyData = async () => {
 //       try {
-//         const response = await fetch("http://192.168.2.51:8000/hierarchy-simple/");
+//         const response = await fetch("http://127.0.0.1:8000/hierarchy-simple/");
 //         if (!response.ok) throw new Error("Failed to fetch hierarchy");
 //         const data: HierarchyNode[] = await response.json();
 //         setHierarchyData(data);
@@ -486,7 +486,7 @@
 //               <div className="w-full lg:w-[30%] xl:w-[25%] flex flex-col gap-3 md:gap-4">
 //                 <TrainingSummaryCard
 //                   title="Training Summary "
-//                   getUrl="http://192.168.2.51:8000/current-month/training-data/"
+//                   getUrl="http://127.0.0.1:8000/current-month/training-data/"
 //                   hqId={selectedHQ}
 //                   factoryId={selectedFactory}
 //                   departmentId={selectedDepartment}
@@ -504,7 +504,7 @@
 
 //                 <TrainingSummaryCard
 //                   title="Man Related Defects"
-//                   getUrl="http://192.168.2.51:8000/current-month/defects-data/"
+//                   getUrl="http://127.0.0.1:8000/current-month/defects-data/"
 //                   hqId={selectedHQ}
 //                   factoryId={selectedFactory}
 //                   departmentId={selectedDepartment}
@@ -625,8 +625,8 @@
 //     const fetchData = async () => {
 //       try {
 //         const [hierarchyRes, deptsRes] = await Promise.all([
-//           fetch("http://192.168.2.51:8000/hierarchy-simple/"),
-//           fetch("http://192.168.2.51:8000/departments/")
+//           fetch("http://127.0.0.1:8000/hierarchy-simple/"),
+//           fetch("http://127.0.0.1:8000/departments/")
 //         ]);
 
 //         if (!hierarchyRes.ok) throw new Error("Failed to fetch hierarchy");
@@ -1040,7 +1040,7 @@
 //               <div className="w-full lg:w-[30%] xl:w-[25%] flex flex-col gap-3 md:gap-4">
 //                 <TrainingSummaryCard
 //                   title="Training Summary "
-//                   getUrl="http://192.168.2.51:8000/current-month/training-data/"
+//                   getUrl="http://127.0.0.1:8000/current-month/training-data/"
 //                   hqId={selectedHQ}
 //                   factoryId={selectedFactory}
 //                   departmentId={selectedDepartment}
@@ -1058,7 +1058,7 @@
 
 //                 <TrainingSummaryCard
 //                   title="Man Related Defects"
-//                   getUrl="http://192.168.2.51:8000/current-month/defects-data/"
+//                   getUrl="http://127.0.0.1:8000/current-month/defects-data/"
 //                   hqId={selectedHQ}
 //                   factoryId={selectedFactory}
 //                   departmentId={selectedDepartment}
@@ -1204,7 +1204,7 @@ const Management: React.FC = () => {
   useEffect(() => {
     const fetchHierarchyData = async () => {
       try {
-        const response = await fetch("http://192.168.2.51:8000/hierarchy-simple/");
+        const response = await fetch("http://127.0.0.1:8000/hierarchy-simple/");
         if (!response.ok) throw new Error("Failed to fetch hierarchy");
         const data: HierarchyNode[] = await response.json();
         setHierarchyData(data);
@@ -1575,7 +1575,7 @@ const Management: React.FC = () => {
               <div className="w-full lg:w-[30%] xl:w-[25%] flex flex-col gap-3 md:gap-12">
                 <TrainingSummaryCard
                   title="Training Summary"
-                  getUrl="http://192.168.2.51:8000/current-month/training-data/"
+                  getUrl="http://127.0.0.1:8000/current-month/training-data/"
                   hqId={selectedHQ}
                   factoryId={selectedFactory}
                   departmentId={selectedDepartment}
@@ -1592,7 +1592,7 @@ const Management: React.FC = () => {
                 />
                 <TrainingSummaryCard
                   title="Man Related Defects"
-                  getUrl="http://192.168.2.51:8000/current-month/defects-data/"
+                  getUrl="http://127.0.0.1:8000/current-month/defects-data/"
                   hqId={selectedHQ}
                   factoryId={selectedFactory}
                   departmentId={selectedDepartment}

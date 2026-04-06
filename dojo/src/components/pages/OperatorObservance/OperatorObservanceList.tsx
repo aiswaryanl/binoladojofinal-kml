@@ -7,7 +7,7 @@
 //   Award, Clock, Users, AlertCircle, XCircle as XIcon,
 // } from "lucide-react";
 
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // /* ---------- Types ---------- */
 // interface Topic {
@@ -523,7 +523,7 @@ import {
 import * as ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
-const API_BASE_URL = "http://192.168.2.51:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 /* ---------- Types ---------- */
 interface Topic {

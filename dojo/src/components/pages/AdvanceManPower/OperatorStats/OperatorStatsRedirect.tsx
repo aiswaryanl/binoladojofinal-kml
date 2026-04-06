@@ -34,7 +34,7 @@
 //   loading?: boolean;
 // }
 
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // const OperatorStatsRedirect: React.FC<Props> = ({
 //   hqId, factoryId, departmentId, lineId, sublineId, stationId,
@@ -231,7 +231,7 @@
 //   selectedMonth?: string;
 // }
 
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // const OperatorStatsRedirect: React.FC<Props> = ({ 
 //   hqId, factoryId, departmentId, lineId, sublineId, stationId, selectedYear, selectedMonth 
@@ -466,7 +466,7 @@ interface Props {
   selectedYear?: number; // ✅ This should be FY start year (passed from parent)
 }
 
-const API_BASE_URL = "http://192.168.2.51:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 const OperatorStatsRedirect: React.FC<Props> = ({ 
   hqId, factoryId, departmentId, lineId, sublineId, stationId, selectedYear

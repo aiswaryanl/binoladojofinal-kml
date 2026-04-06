@@ -41,7 +41,7 @@
 
 //   // ✅ Fetch data from Django API
 //   useEffect(() => {
-//     fetch("http://192.168.2.51:8000/ojt-status/")
+//     fetch("http://127.0.0.1:8000/ojt-status/")
 //       .then((res) => {
 //         if (!res.ok) throw new Error("Failed to fetch OJT data");
 //         return res.json();
@@ -344,7 +344,7 @@
 
 //   // ✅ Fetch data from Django API
 //   useEffect(() => {
-//     fetch("http://192.168.2.51:8000/ojt-status/")
+//     fetch("http://127.0.0.1:8000/ojt-status/")
 //       .then((res) => {
 //         if (!res.ok) throw new Error("Failed to fetch OJT data");
 //         return res.json();

@@ -51,7 +51,7 @@
 // //     phone: "",
 // //   });
 
-// //   const API_BASE_URL = "http://192.168.2.51:8000";
+// //   const API_BASE_URL = "http://127.0.0.1:8000";
 
 // //   const tabs = [
 // //     { id: "overview", name: "Overview", icon: Users },
@@ -668,7 +668,7 @@
 // //     phone: "",
 // //   });
 
-// //   const API_BASE_URL = "http://192.168.2.51:8000";
+// //   const API_BASE_URL = "http://127.0.0.1:8000";
 
 // //   const tabs = [
 // //     { id: "overview", name: "Overview", icon: Users },
@@ -1288,7 +1288,7 @@
 // //     phone: "",
 // //   });
 
-// //   const API_BASE_URL = "http://192.168.2.51:8000";
+// //   const API_BASE_URL = "http://127.0.0.1:8000";
 
 // //   const tabs = [
 // //     { id: "overview", name: "Overview", icon: Users },
@@ -1957,7 +1957,7 @@
 // //     phone: "",
 // //   });
 
-// //   const API_BASE_URL = "http://192.168.2.51:8000";
+// //   const API_BASE_URL = "http://127.0.0.1:8000";
 
 // //   const tabs = [
 // //     { id: "overview", name: "Overview", icon: Users },
@@ -2683,7 +2683,7 @@
 // //     phone: "",
 // //   });
 
-// //   const API_BASE_URL = "http://192.168.2.51:8000";
+// //   const API_BASE_URL = "http://127.0.0.1:8000";
 
 // //   const tabs = [
 // //     { id: "overview", name: "Overview", icon: Users },
@@ -3440,7 +3440,7 @@
 // // }
 
 // // // ---------------- API service (token + toasts like your other page) ----------------
-// // const API_BASE_URL = "http://192.168.2.51:8000/";
+// // const API_BASE_URL = "http://127.0.0.1:8000/";
 
 // // const api = {
 // //   async call(endpoint: string, options: RequestInit = {}) {
@@ -4311,7 +4311,7 @@
 // }
 
 // // ---------------- Config ----------------
-// const API_BASE_URL = "http://192.168.2.51:8000"; // no trailing slash
+// const API_BASE_URL = "http://127.0.0.1:8000"; // no trailing slash
 
 // // Build a mapping of department_id -> lines[] from hierarchy-simple
 // const buildLinesByDeptFromHierarchy = (
@@ -5169,7 +5169,7 @@
 // }
 
 // // ---------------- Config ----------------
-// const API_BASE_URL = "http://192.168.2.51:8000"; // no trailing slash
+// const API_BASE_URL = "http://127.0.0.1:8000"; // no trailing slash
 
 // const buildLinesByDeptFromHierarchy = (
 //   items: ApiHierarchyResponseItem[]
@@ -6251,7 +6251,7 @@ interface ApiHierarchyResponseItem {
 }
 
 // ---------------- Config ----------------
-const API_BASE_URL = "http://192.168.2.51:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 const buildLinesByDeptFromHierarchy = (
   items: ApiHierarchyResponseItem[]

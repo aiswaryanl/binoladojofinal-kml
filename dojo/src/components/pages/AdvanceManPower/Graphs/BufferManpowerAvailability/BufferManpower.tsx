@@ -161,7 +161,7 @@
 //   // removed unused props for clarity
 // }
 
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // // Labels ordered for Financial Year (Apr - Mar)
 // const financialYearConfig = [
@@ -347,7 +347,7 @@
 //   selectedYear?: number; 
 // }
 
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // // Financial Year Config: Maps month names to month IDs and which FY-part they belong to
 // const financialYearConfig = [
@@ -532,7 +532,7 @@ interface BufferProps {
   selectedYear?: number; 
 }
 
-const API_BASE_URL = "http://192.168.2.51:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 // Financial Year Config
 const financialYearConfig = [

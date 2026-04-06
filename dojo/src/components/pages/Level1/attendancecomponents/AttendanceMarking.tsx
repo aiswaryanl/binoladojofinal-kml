@@ -43,7 +43,7 @@
 //   useEffect(() => {
 //     const fetchDays = async () => {
 //       try {
-//         const res = await fetch('http://192.168.2.51:8000/days/');
+//         const res = await fetch('http://127.0.0.1:8000/days/');
 //         if (!res.ok) throw new Error('Failed to load days');
 //         const data: Day[] = await res.json();
 //         setDays(data.sort((a, b) => a.days_id - b.days_id));
@@ -59,8 +59,8 @@
 //     const fetchBatches = async () => {
 //       setLoading(true);
 //       const endpoint = viewMode === 'active'
-//         ? 'http://192.168.2.51:8000/training-batches/active/'
-//         : 'http://192.168.2.51:8000/training-batches/past/';
+//         ? 'http://127.0.0.1:8000/training-batches/active/'
+//         : 'http://127.0.0.1:8000/training-batches/past/';
 //       try {
 //         const res = await fetch(endpoint);
 //         if (!res.ok) throw new Error(`Failed to fetch ${viewMode} batches`);
@@ -85,7 +85,7 @@
 //     const fetchBatchDetails = async () => {
 //       setLoading(true);
 //       try {
-//         const res = await fetch(`http://192.168.2.51:8000/attendance-detail/${selectedBatch}/`);
+//         const res = await fetch(`http://127.0.0.1:8000/attendance-detail/${selectedBatch}/`);
 //         if (!res.ok) throw new Error('Failed to load batch');
 //         const data = await res.json();
 
@@ -171,7 +171,7 @@
 
 //     setSaving(true);
 //     try {
-//       const res = await fetch('http://192.168.2.51:8000/attendances/', {
+//       const res = await fetch('http://127.0.0.1:8000/attendances/', {
 //         method: 'POST',
 //         headers: { 'Content-Type': 'application/json' },
 //         body: JSON.stringify(changes),
@@ -510,7 +510,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
   useEffect(() => {
     const fetchDays = async () => {
       try {
-        const res = await fetch('http://192.168.2.51:8000/days/');
+        const res = await fetch('http://127.0.0.1:8000/days/');
         if (!res.ok) throw new Error('Failed to load days');
         const data: Day[] = await res.json();
         setDays(data.sort((a, b) => a.days_id - b.days_id));
@@ -526,8 +526,8 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
     const fetchBatches = async () => {
       setLoading(true);
       const endpoint = viewMode === 'active'
-        ? 'http://192.168.2.51:8000/training-batches/active/'
-        : 'http://192.168.2.51:8000/training-batches/past/';
+        ? 'http://127.0.0.1:8000/training-batches/active/'
+        : 'http://127.0.0.1:8000/training-batches/past/';
       try {
         const res = await fetch(endpoint);
         if (!res.ok) throw new Error(`Failed to fetch ${viewMode} batches`);
@@ -547,7 +547,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
   // Fetch completion status
   const fetchCompletionStatus = async (batchId: string) => {
     try {
-      const res = await fetch(`http://192.168.2.51:8000/batch/${batchId}/completion-status/`);
+      const res = await fetch(`http://127.0.0.1:8000/batch/${batchId}/completion-status/`);
       if (res.ok) {
         const data: CompletionStatus = await res.json();
         setCompletionStatus(data);
@@ -573,7 +573,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
     const fetchBatchDetails = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`http://192.168.2.51:8000/attendance-detail/${selectedBatch}/`);
+        const res = await fetch(`http://127.0.0.1:8000/attendance-detail/${selectedBatch}/`);
         if (!res.ok) throw new Error('Failed to load batch');
         const data = await res.json();
 
@@ -605,7 +605,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
 
     const fetchSavedDates = async (batchId: string, users: any[]) => {
       try {
-        const res = await fetch(`http://192.168.2.51:8000/batch/${batchId}/all-attendance/`);
+        const res = await fetch(`http://127.0.0.1:8000/batch/${batchId}/all-attendance/`);
         if (res.ok) {
           const attendanceData = await res.json();
           
@@ -650,7 +650,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
   // Load attendance for a specific day
   const loadAttendanceForDay = async (dayId: number) => {
     try {
-      const res = await fetch(`http://192.168.2.51:8000/attendance-detail/${selectedBatch}/`);
+      const res = await fetch(`http://127.0.0.1:8000/attendance-detail/${selectedBatch}/`);
       if (res.ok) {
         const data = await res.json();
         const initial: Record<number, 'present' | 'absent' | ''> = {};
@@ -726,7 +726,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
     setSuccessMessage('');
 
     try {
-      const res = await fetch('http://192.168.2.51:8000/attendances/', {
+      const res = await fetch('http://127.0.0.1:8000/attendances/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(changes),
@@ -746,7 +746,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
       await fetchCompletionStatus(selectedBatch);
       
       // Check if batch was auto-completed
-      const statusRes = await fetch(`http://192.168.2.51:8000/batch/${selectedBatch}/completion-status/`);
+      const statusRes = await fetch(`http://127.0.0.1:8000/batch/${selectedBatch}/completion-status/`);
       if (statusRes.ok) {
         const statusData = await statusRes.json();
         if (!statusData.is_active && isBatchCompleted === false) {
@@ -756,8 +756,8 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
           setTimeout(() => {
             // Refresh batch list to move it to past
             const endpoint = viewMode === 'active'
-              ? 'http://192.168.2.51:8000/training-batches/active/'
-              : 'http://192.168.2.51:8000/training-batches/past/';
+              ? 'http://127.0.0.1:8000/training-batches/active/'
+              : 'http://127.0.0.1:8000/training-batches/past/';
             fetch(endpoint).then(res => res.json()).then(data => setBatches(data));
           }, 2000);
         }
@@ -780,7 +780,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
     
     setToggleLoading(true);
     try {
-      const res = await fetch(`http://192.168.2.51:8000/batch/${selectedBatch}/toggle-completion/`, {
+      const res = await fetch(`http://127.0.0.1:8000/batch/${selectedBatch}/toggle-completion/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -796,8 +796,8 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
       
       // Refresh batch list
       const endpoint = viewMode === 'active'
-        ? 'http://192.168.2.51:8000/training-batches/active/'
-        : 'http://192.168.2.51:8000/training-batches/past/';
+        ? 'http://127.0.0.1:8000/training-batches/active/'
+        : 'http://127.0.0.1:8000/training-batches/past/';
       const batchRes = await fetch(endpoint);
       if (batchRes.ok) {
         const batchData = await batchRes.json();
@@ -820,7 +820,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
     
     setToggleLoading(true);
     try {
-      const res = await fetch(`http://192.168.2.51:8000/batch/${selectedBatch}/reopen/`, {
+      const res = await fetch(`http://127.0.0.1:8000/batch/${selectedBatch}/reopen/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -833,7 +833,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
       
       await fetchCompletionStatus(selectedBatch);
       
-      const endpoint = 'http://192.168.2.51:8000/training-batches/active/';
+      const endpoint = 'http://127.0.0.1:8000/training-batches/active/';
       const batchRes = await fetch(endpoint);
       if (batchRes.ok) {
         const batchData = await batchRes.json();

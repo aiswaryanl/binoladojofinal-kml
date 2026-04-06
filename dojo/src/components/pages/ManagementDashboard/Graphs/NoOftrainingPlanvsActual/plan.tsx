@@ -11,7 +11,7 @@
 //   stationId?: string;
 // }
 
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // // Define colors here
 // const COLOR_PLAN = "rgba(52, 152, 219, 0.8)";
@@ -216,7 +216,7 @@ interface PlanProps {
   financialYear: string; // NEW
 }
 
-const API_BASE_URL = "http://192.168.2.51:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 const Plan: React.FC<PlanProps> = ({
   hqId,

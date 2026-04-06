@@ -130,7 +130,7 @@
 //     const [newContentFile, setNewContentFile] = useState<File | null>(null);
 //     const [newContentUrl, setNewContentUrl] = useState('');
 
-//     const API_BASE_URL = 'http://192.168.2.51:8000';
+//     const API_BASE_URL = 'http://127.0.0.1:8000';
 
 //     // Validation for required location state
 //     if (!locationState?.stationId || !locationState?.levelId) {
@@ -982,7 +982,7 @@
 //     const [newContentFile, setNewContentFile] = useState<File | null>(null);
 //     const [newContentUrl, setNewContentUrl] = useState('');
 
-//     const API_BASE_URL = 'http://192.168.2.51:8000';
+//     const API_BASE_URL = 'http://127.0.0.1:8000';
 
 //     // Validation for required location state
 //     if (!locationState?.stationId || !locationState?.levelId) {
@@ -1843,7 +1843,7 @@
 //     const [newContentFile, setNewContentFile] = useState<File | null>(null);
 //     const [newContentUrl, setNewContentUrl] = useState('');
 
-//     const API_BASE_URL = 'http://192.168.2.51:8000';
+//     const API_BASE_URL = 'http://127.0.0.1:8000';
 
 //     // Validation for required location state
 //     if (!locationState?.stationId || !locationState?.levelId) {
@@ -2763,7 +2763,7 @@ export const TrainingOptionsPageNew: React.FC = () => {
     const [newContentFile, setNewContentFile] = useState<File | null>(null);
     const [newContentUrl, setNewContentUrl] = useState('');
 
-    const API_BASE_URL = 'http://192.168.2.51:8000';
+    const API_BASE_URL = 'http://127.0.0.1:8000';
 
     // Validation for required location state
     if (!locationState?.stationId || !locationState?.levelId) {

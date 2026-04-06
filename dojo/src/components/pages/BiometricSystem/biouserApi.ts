@@ -1,7 +1,7 @@
 // src/api/biouserApi.ts
 import axios from 'axios';
 
-const API_URL = 'http://192.168.2.51:8000/biouser/';
+const API_URL = 'http://127.0.0.1:8000/biouser/';
 
 export interface BioUser {
   id: number;
@@ -62,8 +62,8 @@ export const syncUserToDevice = async (id: number, deviceId: number): Promise<an
 // // src/api/biouserApi.ts
 // import axios from 'axios';
 
-// // const API_URL = 'http://192.168.2.51:8000/biouser/'; // Change if needed
-// const API_URL = 'http://192.168.2.51:8000/biouser/'; // Change if needed
+// // const API_URL = 'http://127.0.0.1:8000/biouser/'; // Change if needed
+// const API_URL = 'http://127.0.0.1:8000/biouser/'; // Change if needed
 
 // export interface BioUser {
 //   id: number;

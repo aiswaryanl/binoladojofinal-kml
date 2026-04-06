@@ -4,7 +4,7 @@
 // import type { Machine, Operation, Department } from './types';
 
 // const api = axios.create({
-//   baseURL: API_ENDPOINTS.BASE_URL, // e.g. http://192.168.2.51:8000
+//   baseURL: API_ENDPOINTS.BASE_URL, // e.g. http://127.0.0.1:8000
 //   timeout: 10000,
 //   headers: { Accept: 'application/json' },
 // });
@@ -20,9 +20,9 @@
 //   Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
 
 // const ENDPOINTS = {
-//   MACHINES: '/machines/',            // http://192.168.2.51:8000/machines/
-//   OPERATIONS: '/operationlist/',     // http://192.168.2.51:8000/operationlist/
-//   // DEPARTMENTS: '/departments/',  // http://192.168.2.51:8000/departments/
+//   MACHINES: '/machines/',            // http://127.0.0.1:8000/machines/
+//   OPERATIONS: '/operationlist/',     // http://127.0.0.1:8000/operationlist/
+//   // DEPARTMENTS: '/departments/',  // http://127.0.0.1:8000/departments/
 //   DEPARTMENTS: API_ENDPOINTS.DEPARTMENT,
 // } as const;
 
@@ -123,7 +123,7 @@ import { API_ENDPOINTS } from '../../constants/api';
 import type { Machine, Operation, Department } from './types';
 
 const api = axios.create({
-  baseURL: API_ENDPOINTS.BASE_URL, // e.g. http://192.168.2.51:8000
+  baseURL: API_ENDPOINTS.BASE_URL, // e.g. http://127.0.0.1:8000
   timeout: 10000,
   headers: { Accept: 'application/json' },
 });
@@ -139,9 +139,9 @@ const asList = (data: any) =>
   Array.isArray(data) ? data : Array.isArray(data?.results) ? data.results : [];
 
 const ENDPOINTS = {
-  MACHINES: '/machines/',            // http://192.168.2.51:8000/machines/
-  OPERATIONS: '/operationlist/',     // http://192.168.2.51:8000/operationlist/
-  // DEPARTMENTS: '/departments/',  // http://192.168.2.51:8000/departments/
+  MACHINES: '/machines/',            // http://127.0.0.1:8000/machines/
+  OPERATIONS: '/operationlist/',     // http://127.0.0.1:8000/operationlist/
+  // DEPARTMENTS: '/departments/',  // http://127.0.0.1:8000/departments/
   DEPARTMENTS: API_ENDPOINTS.DEPARTMENT,
 } as const;
 

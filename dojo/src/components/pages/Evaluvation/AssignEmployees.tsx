@@ -95,7 +95,7 @@ const EasyTestReceiverHorizontal: React.FC<{ onStatusChange?: (connected: boolea
     // Initial Check
     const checkInitialStatus = async () => {
       try {
-        const res = await fetch("http://192.168.2.51:8000/api/receiver-status/");
+        const res = await fetch("http://127.0.0.1:8000/api/receiver-status/");
         if (res.ok) {
           const data = await res.json();
           setIsConnected(Boolean(data.connected));
@@ -107,7 +107,7 @@ const EasyTestReceiverHorizontal: React.FC<{ onStatusChange?: (connected: boolea
     checkInitialStatus();
 
     // WS Connection
-    const ws = new WebSocket("ws://192.168.2.51:8000/ws/quiz/");
+    const ws = new WebSocket("ws://127.0.0.1:8000/ws/quiz/");
     
     ws.onmessage = (event) => {
       try {
@@ -147,7 +147,7 @@ const EasyTestReceiverHorizontal: React.FC<{ onStatusChange?: (connected: boolea
   const handleManualRefresh = async () => {
     setIsChecking(true);
     try {
-      const res = await fetch("http://192.168.2.51:8000/api/receiver-status/");
+      const res = await fetch("http://127.0.0.1:8000/api/receiver-status/");
       if (res.ok) {
         const data = await res.json();
         setIsConnected(Boolean(data.connected));
@@ -957,7 +957,7 @@ const AssignEmployees: React.FC = () => {
   useEffect(() => {
     if (!selectedPaperId || !selectedDate) return;
     
-    fetch(`http://192.168.2.51:8000/api/next-test-sequence/?paper_id=${selectedPaperId}&date=${selectedDate}`)
+    fetch(`http://127.0.0.1:8000/api/next-test-sequence/?paper_id=${selectedPaperId}&date=${selectedDate}`)
       .then(res => res.json())
       .then(data => {
         if (data.next_sequence) {
@@ -1011,7 +1011,7 @@ const AssignEmployees: React.FC = () => {
     if (hasFetched.current) return;
     hasFetched.current = true;
 
-    const empUrl = `http://192.168.2.51:8000/skill-matrix/eligible-employees/?station_id=${stationId}&target_level=${CurrentLevel}`;
+    const empUrl = `http://127.0.0.1:8000/skill-matrix/eligible-employees/?station_id=${stationId}&target_level=${CurrentLevel}`;
 
     fetchWithRetry(empUrl)
       .then(data => {
@@ -1032,7 +1032,7 @@ const AssignEmployees: React.FC = () => {
         showToast('Failed to load eligible employees. ' + error.message, 'error');
       });
 
-    fetchWithRetry('http://192.168.2.51:8000/stations/')
+    fetchWithRetry('http://127.0.0.1:8000/stations/')
       .then(data => {
         if (Array.isArray(data)) {
           setSkills(data);
@@ -1053,7 +1053,7 @@ const AssignEmployees: React.FC = () => {
     params.append('station', stationId.toString());
     params.append('level', CurrentLevel.toString());
 
-    fetchWithRetry(`http://192.168.2.51:8000/questionpapers/?${params.toString()}`)
+    fetchWithRetry(`http://127.0.0.1:8000/questionpapers/?${params.toString()}`)
       .then(data => {
         if (Array.isArray(data)) {
           const mappedPapers: QuestionPaper[] = data.map((item: any) => ({
@@ -1177,7 +1177,7 @@ const AssignEmployees: React.FC = () => {
           })),
         };
 
-        const res = await fetch("http://192.168.2.51:8000/start-test/", {
+        const res = await fetch("http://127.0.0.1:8000/start-test/", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),

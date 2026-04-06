@@ -8,7 +8,7 @@
 // } from "lucide-react";
 
 // // --- API Configuration ---
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // // --- Frontend Form Data Interface ---
 // interface AdvanceSettingsData {
@@ -818,7 +818,7 @@
 //   Edit, ArrowUp, ArrowDown
 // } from "lucide-react";
 // // --- API Configuration ---
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 // // --- Frontend Form Data Interface ---
 // interface AdvanceSettingsData {
 //   id?: number;
@@ -1653,7 +1653,7 @@
 //   Edit, ArrowUp, ArrowDown
 // } from "lucide-react";
 
-// const API_BASE_URL = "http://192.168.2.51:8000";
+// const API_BASE_URL = "http://127.0.0.1:8000";
 
 // interface AdvanceSettingsData {
 //   id?: number;
@@ -2567,7 +2567,7 @@ import {
   Edit, ArrowUp, ArrowDown, TrendingDown, TrendingUp, RefreshCw
 } from "lucide-react";
 
-const API_BASE_URL = "http://192.168.2.51:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 interface AdvanceSettingsData {
   id?: number;

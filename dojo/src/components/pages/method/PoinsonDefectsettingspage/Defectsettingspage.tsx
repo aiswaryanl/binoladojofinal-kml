@@ -16,7 +16,7 @@
 // /* ============================================================
 //    CONFIG
 // ============================================================ */
-// const BASE_URL = "http://192.168.2.51:8000"; 
+// const BASE_URL = "http://127.0.0.1:8000"; 
 // const DEFECT_CATEGORIES = "/defect-categories/";
 // const DEFECT_TYPES = "/defect-types/";
 
@@ -388,7 +388,7 @@ import {
 /* ============================================================
    CONFIG
 ============================================================ */
-const BASE_URL = "http://192.168.2.51:8000";
+const BASE_URL = "http://127.0.0.1:8000";
 const DEFECT_CATEGORIES = "/defect-categories/";
 const DEFECT_TYPES = "/defect-types/";
 

@@ -401,8 +401,8 @@
 //       try {
 //         setLoading(true);
 //         const [scoresResponse, deptsResponse] = await Promise.all([
-//           fetch("http://192.168.2.51:8000/scores/passed/level-1/"),
-//           fetch("http://192.168.2.51:8000/departments/"),
+//           fetch("http://127.0.0.1:8000/scores/passed/level-1/"),
+//           fetch("http://127.0.0.1:8000/departments/"),
 //         ]);
 
 //         if (!scoresResponse.ok)
@@ -478,7 +478,7 @@
 
 //       // Fetch employee details
 //       const response = await fetch(
-//         `http://192.168.2.51:8000/mastertable/${empId}/`
+//         `http://127.0.0.1:8000/mastertable/${empId}/`
 //       );
 //       if (!response.ok) {
 //         if (response.status === 404)
@@ -494,7 +494,7 @@
 
 //       // Fetch existing handover data if any
 //       const handResp = await fetch(
-//         `http://192.168.2.51:8000/handovers/employee/${empId}/`
+//         `http://127.0.0.1:8000/handovers/employee/${empId}/`
 //       );
 //       if (handResp.ok) {
 //         const handData = await handResp.json();
@@ -570,7 +570,7 @@
 //     };
 
 //     try {
-//       const response = await fetch("http://192.168.2.51:8000/handovers/", {
+//       const response = await fetch("http://127.0.0.1:8000/handovers/", {
 //         method: "POST",
 //         headers: { "Content-Type": "application/json" },
 //         body: JSON.stringify(payload),
@@ -992,7 +992,7 @@
 //   useEffect(() => {
 //     const fetchHierarchy = async () => {
 //       try {
-//         const response = await fetch("http://192.168.2.51:8000/hierarchy-simple/");
+//         const response = await fetch("http://127.0.0.1:8000/hierarchy-simple/");
 //         if (!response.ok) throw new Error("Failed to fetch hierarchy");
         
 //         const hierarchyData = await response.json();
@@ -1433,8 +1433,8 @@
 //       try {
 //         setLoading(true);
 //         const [scoresResponse, deptsResponse] = await Promise.all([
-//           fetch("http://192.168.2.51:8000/scores/passed/level-1/"),
-//           fetch("http://192.168.2.51:8000/departments/"),
+//           fetch("http://127.0.0.1:8000/scores/passed/level-1/"),
+//           fetch("http://127.0.0.1:8000/departments/"),
 //         ]);
 
 //         if (!scoresResponse.ok)
@@ -1510,7 +1510,7 @@
 
 //       // Fetch employee details
 //       const response = await fetch(
-//         `http://192.168.2.51:8000/mastertable/${empId}/`
+//         `http://127.0.0.1:8000/mastertable/${empId}/`
 //       );
 //       if (!response.ok) {
 //         if (response.status === 404)
@@ -1526,7 +1526,7 @@
 
 //       // Fetch existing handover data if any
 //       const handResp = await fetch(
-//         `http://192.168.2.51:8000/handovers/employee/${empId}/`
+//         `http://127.0.0.1:8000/handovers/employee/${empId}/`
 //       );
 //       if (handResp.ok) {
 //         const handData = await handResp.json();
@@ -1610,7 +1610,7 @@
 //     };
 
 //     try {
-//       const response = await fetch("http://192.168.2.51:8000/handovers/", {
+//       const response = await fetch("http://127.0.0.1:8000/handovers/", {
 //         method: "POST",
 //         headers: { "Content-Type": "application/json" },
 //         body: JSON.stringify(payload),
@@ -2034,7 +2034,7 @@
 //   useEffect(() => {
 //     const fetchHierarchy = async () => {
 //       try {
-//         const response = await fetch("http://192.168.2.51:8000/hierarchy-simple/");
+//         const response = await fetch("http://127.0.0.1:8000/hierarchy-simple/");
 //         if (!response.ok) throw new Error("Failed to fetch hierarchy");
 //         const hierarchyData = await response.json();
 
@@ -2506,8 +2506,8 @@
 //       try {
 //         setLoading(true);
 //         const [scoresResponse, deptsResponse] = await Promise.all([
-//           fetch("http://192.168.2.51:8000/scores/passed/level-1/"),
-//           fetch("http://192.168.2.51:8000/departments/"),
+//           fetch("http://127.0.0.1:8000/scores/passed/level-1/"),
+//           fetch("http://127.0.0.1:8000/departments/"),
 //         ]);
 
 //         if (!scoresResponse.ok) throw new Error(`Scores API failed: ${scoresResponse.status}`);
@@ -2526,7 +2526,7 @@
 
 //         const handoverChecks = await Promise.all(
 //           empIds.map(async (empId) => {
-//             const res = await fetch(`http://192.168.2.51:8000/handovers/employee/${empId}/`);
+//             const res = await fetch(`http://127.0.0.1:8000/handovers/employee/${empId}/`);
 //             return { empId, exists: res.ok };
 //           })
 //         );
@@ -2594,7 +2594,7 @@
 //       }
 
 //       // Fetch employee details
-//       const response = await fetch(`http://192.168.2.51:8000/mastertable/${empId}/`);
+//       const response = await fetch(`http://127.0.0.1:8000/mastertable/${empId}/`);
 //       if (!response.ok) {
 //         if (response.status === 404)
 //           throw new Error(`Employee with ID '${empId}' not found in Master Table.`);
@@ -2604,7 +2604,7 @@
 //       setSelectedEmployeeDetails(data);
 
 //       // ✅ Fetch existing handover if any
-//       const handResp = await fetch(`http://192.168.2.51:8000/handovers/employee/${empId}/`);
+//       const handResp = await fetch(`http://127.0.0.1:8000/handovers/employee/${empId}/`);
 //       if (handResp.ok) {
 //         // Existing handover found → Edit mode
 //         const handData = await handResp.json();
@@ -2683,7 +2683,7 @@
 //     };
 
 //     try {
-//       const response = await fetch("http://192.168.2.51:8000/handovers/", {
+//       const response = await fetch("http://127.0.0.1:8000/handovers/", {
 //         method: "POST",
 //         headers: { "Content-Type": "application/json" },
 //         body: JSON.stringify(payload),
@@ -3203,7 +3203,7 @@ const HandOverFormModal: React.FC<HandOverFormModalProps> = ({
   useEffect(() => {
     const fetchHierarchy = async () => {
       try {
-        const response = await fetch("http://192.168.2.51:8000/hierarchy-simple/");
+        const response = await fetch("http://127.0.0.1:8000/hierarchy-simple/");
         if (!response.ok) throw new Error("Failed to fetch hierarchy");
         const hierarchyData = await response.json();
         const linesMap: Record<string, LineOption[]> = {};
@@ -3559,8 +3559,8 @@ const HandOverSheet: React.FC = () => {
       try {
         setLoading(true);
         const [scoresRes, deptsRes] = await Promise.all([
-          fetch("http://192.168.2.51:8000/scores/passed/level-1/"),
-          fetch("http://192.168.2.51:8000/departments/"),
+          fetch("http://127.0.0.1:8000/scores/passed/level-1/"),
+          fetch("http://127.0.0.1:8000/departments/"),
         ]);
         if (!scoresRes.ok) throw new Error(`Scores API failed: ${scoresRes.status}`);
         if (!deptsRes.ok) throw new Error(`Departments API failed: ${deptsRes.status}`);
@@ -3577,7 +3577,7 @@ const HandOverSheet: React.FC = () => {
 
         const checks = await Promise.all(
           empIds.map(async (empId) => {
-            const res = await fetch(`http://192.168.2.51:8000/handovers/employee/${empId}/`);
+            const res = await fetch(`http://127.0.0.1:8000/handovers/employee/${empId}/`);
             return { empId, exists: res.ok };
           })
         );
@@ -3641,12 +3641,12 @@ const HandOverSheet: React.FC = () => {
       const empId = getEmpId(score.employee_details);
       if (!empId) throw new Error(`Could not parse Employee ID from: "${score.employee_details}"`);
 
-      const empRes = await fetch(`http://192.168.2.51:8000/mastertable/${empId}/`);
+      const empRes = await fetch(`http://127.0.0.1:8000/mastertable/${empId}/`);
       if (!empRes.ok) throw new Error(empRes.status === 404 ? `Employee '${empId}' not found.` : `Error ${empRes.status}`);
       const data: EmployeeMasterData = await empRes.json();
       setSelectedEmployeeDetails(data);
 
-      const handRes = await fetch(`http://192.168.2.51:8000/handovers/employee/${empId}/`);
+      const handRes = await fetch(`http://127.0.0.1:8000/handovers/employee/${empId}/`);
       if (handRes.ok) {
         const handData = await handRes.json();
         setIsEditMode(true);
@@ -3693,7 +3693,7 @@ const HandOverSheet: React.FC = () => {
 
     try {
       const empId = getEmpId(score.employee_details);
-      const res = await fetch(`http://192.168.2.51:8000/handovers/employee/${empId}/`);
+      const res = await fetch(`http://127.0.0.1:8000/handovers/employee/${empId}/`);
       if (!res.ok) throw new Error(`Failed to load handover details (Status: ${res.status})`);
       const data: HandoverDetail = await res.json();
       setDetailModalData(data);
@@ -3731,7 +3731,7 @@ const HandOverSheet: React.FC = () => {
       gojo_incharge_name: formData.gojoInchargeName,
     };
     try {
-      const res = await fetch("http://192.168.2.51:8000/handovers/", {
+      const res = await fetch("http://127.0.0.1:8000/handovers/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

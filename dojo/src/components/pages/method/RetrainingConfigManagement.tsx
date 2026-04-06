@@ -29,7 +29,7 @@ const RetrainingConfigManagement = () => {
     max_count: 2
   });
 
-  const API_BASE_URL = 'http://192.168.2.51:8000';
+  const API_BASE_URL = 'http://127.0.0.1:8000';
 
   useEffect(() => {
     fetchConfigs();

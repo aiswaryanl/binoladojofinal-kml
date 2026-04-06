@@ -153,7 +153,7 @@ const Advanced = () => {
   useEffect(() => {
     const fetchAndProcessStructures = async () => {
       try {
-        const response = await fetch("http://192.168.2.51:8000/hierarchy-simple/");
+        const response = await fetch("http://127.0.0.1:8000/hierarchy-simple/");
         if (!response.ok) throw new Error("Failed to fetch factory structures");
         const apiData: ApiHierarchyResponseItem[] = await response.json();
 
@@ -325,7 +325,7 @@ const Advanced = () => {
         if (selectedSubline) params.set('subline', selectedSubline.toString());
         if (selectedStation) params.set('station', selectedStation.toString());
 
-        const response = await fetch(`http://192.168.2.51:8000/production-data/get-month-lock-status/?${params.toString()}`);
+        const response = await fetch(`http://127.0.0.1:8000/production-data/get-month-lock-status/?${params.toString()}`);
         if (!response.ok) throw new Error('Failed to fetch lock status');
 
         const data = await response.json();
@@ -366,10 +366,10 @@ const Advanced = () => {
           const monthNumber = MONTHS.indexOf(selectedMonth) + 1;
           baseParams.set('month', String(monthNumber));
           baseParams.set('year', selectedYear.toString());
-          response = await fetch(`http://192.168.2.51:8000/production-data/monthly-summary/?${baseParams.toString()}`);
+          response = await fetch(`http://127.0.0.1:8000/production-data/monthly-summary/?${baseParams.toString()}`);
         } else if (timeView === 'Weekly' && selectedWeek) {
           baseParams.set('start_date', selectedWeek);
-          response = await fetch(`http://192.168.2.51:8000/production-data/aggregated-weekly-data/?${baseParams.toString()}`);
+          response = await fetch(`http://127.0.0.1:8000/production-data/aggregated-weekly-data/?${baseParams.toString()}`);
         } else {
           setPlanData(null);
           setLoading(prev => ({ ...prev, planData: false }));

@@ -57,7 +57,7 @@ const EmployeeSearch = () => {
       try {
         setIsLoading(true);
         const response = await fetch(
-          `http://192.168.2.51:8000/employee-skill-search/?query=${encodeURIComponent(term)}`
+          `http://127.0.0.1:8000/employee-skill-search/?query=${encodeURIComponent(term)}`
         );
 
         if (response.ok) {
@@ -97,7 +97,7 @@ const EmployeeSearch = () => {
 
       try {
         const response = await fetch(
-          `http://192.168.2.51:8000/multiskilling/?emp_id=${employeeId}`
+          `http://127.0.0.1:8000/multiskilling/?emp_id=${employeeId}`
         );
 
         if (response.ok) {

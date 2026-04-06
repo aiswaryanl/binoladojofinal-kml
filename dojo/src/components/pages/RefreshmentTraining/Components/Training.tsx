@@ -16,7 +16,7 @@ import RefresherIndividualLobby from './RefresherIndividualLobby';
 import RefresherRemoteLobby from './RefresherRemoteLobby';
 import RefresherBatchView from './RefresherBatchView';
 
-const API_BASE = 'http://192.168.2.51:8000';
+const API_BASE = 'http://127.0.0.1:8000';
 
 // --- Types ---
 interface TrainingCategory { id: number; name: string; }

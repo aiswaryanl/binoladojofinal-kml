@@ -89,7 +89,7 @@ const InstructionsPage: React.FC = () => {
   // Fetch duration setting
   useEffect(() => {
     if (paperId) {
-        fetch(`http://192.168.2.51:8000/questionpapers/${paperId}/questions/`)
+        fetch(`http://127.0.0.1:8000/questionpapers/${paperId}/questions/`)
             .then(res => res.json())
             .then(data => {
                 if (data.question_paper) {

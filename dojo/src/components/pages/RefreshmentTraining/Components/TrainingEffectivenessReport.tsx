@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { TrendingUp, TrendingDown, Award, Target, Users, BarChart3, ArrowLeft, Search, Minus, AlertCircle } from 'lucide-react';
 
-const API_BASE = 'http://192.168.2.51:8000';
+const API_BASE = 'http://127.0.0.1:8000';
 
 interface EffectivenessData {
   topic_id: number; // This is actually Category ID now from backend

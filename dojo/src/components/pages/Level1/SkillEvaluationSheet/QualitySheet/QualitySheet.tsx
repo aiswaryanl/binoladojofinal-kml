@@ -33,7 +33,7 @@
 // }
 // console.log()
 // async function fetchEmployeeDetails(empId: string) {
-//   const response = await fetch(`http://192.168.2.51:8000/mastertable/?emp_id=${empId}`);
+//   const response = await fetch(`http://127.0.0.1:8000/mastertable/?emp_id=${empId}`);
 //   if (!response.ok) throw new Error('Failed to fetch employee details');
 //   const data = await response.json();
 //   if (!data.length) throw new Error('Employee not found');
@@ -41,13 +41,13 @@
 // }
 
 // async function fetchEmployeeEvaluations(empId: string) {
-//   const response = await fetch(`http://192.168.2.51:8000/qualityevaluations/?employee=${empId}`);
+//   const response = await fetch(`http://127.0.0.1:8000/qualityevaluations/?employee=${empId}`);
 //   if (!response.ok) throw new Error('Failed to fetch evaluations');
 //   return await response.json();
 // }
 
 // async function fetchEmployeeIdByEmpId(empId: string) {
-//   const response = await fetch(`http://192.168.2.51:8000/mastertable/${empId}`);
+//   const response = await fetch(`http://127.0.0.1:8000/mastertable/${empId}`);
 //   if (!response.ok) throw new Error('Cannot fetch employee');
 //   const employees = await response.json();
 //   if (!employees.length) throw new Error('Employee not found');
@@ -476,7 +476,7 @@
 //         finalStatus = 'FAIL';
 //       }
 
-//       const evaluationResponse = await fetch('http://192.168.2.51:8000/qualityevaluations/', {
+//       const evaluationResponse = await fetch('http://127.0.0.1:8000/qualityevaluations/', {
 //         method: 'POST',
 //         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
 //         body: JSON.stringify({
@@ -514,7 +514,7 @@
 //       const evaluationId = evaluation.id;
 
 //       for (const sequence of qualityModule.sequences) {
-//         const sequenceResponse = await fetch('http://192.168.2.51:8000/qualitysequences/', {
+//         const sequenceResponse = await fetch('http://127.0.0.1:8000/qualitysequences/', {
 //           method: 'POST',
 //           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
 //           body: JSON.stringify({
@@ -543,7 +543,7 @@
 //       }
 
 //       const calculateResponse = await fetch(
-//         `http://192.168.2.51:8000/qualityevaluations/${evaluationId}/calculate_results/`,
+//         `http://127.0.0.1:8000/qualityevaluations/${evaluationId}/calculate_results/`,
 //         { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' } }
 //       );
 
@@ -888,7 +888,7 @@ interface LocationState {
 }
 console.log()
 async function fetchEmployeeDetails(empId: string) {
-  const response = await fetch(`http://192.168.2.51:8000/mastertable/?emp_id=${empId}`);
+  const response = await fetch(`http://127.0.0.1:8000/mastertable/?emp_id=${empId}`);
   if (!response.ok) throw new Error('Failed to fetch employee details');
   const data = await response.json();
   if (!data.length) throw new Error('Employee not found');
@@ -896,13 +896,13 @@ async function fetchEmployeeDetails(empId: string) {
 }
 
 async function fetchEmployeeEvaluations(empId: string) {
-  const response = await fetch(`http://192.168.2.51:8000/qualityevaluations/?employee=${empId}`);
+  const response = await fetch(`http://127.0.0.1:8000/qualityevaluations/?employee=${empId}`);
   if (!response.ok) throw new Error('Failed to fetch evaluations');
   return await response.json();
 }
 
 async function fetchEmployeeIdByEmpId(empId: string) {
-  const response = await fetch(`http://192.168.2.51:8000/mastertable/${empId}`);
+  const response = await fetch(`http://127.0.0.1:8000/mastertable/${empId}`);
   if (!response.ok) throw new Error('Cannot fetch employee');
   const employees = await response.json();
   if (!employees.length) throw new Error('Employee not found');
@@ -1331,7 +1331,7 @@ function QualitySheet() {
         finalStatus = 'FAIL';
       }
 
-      const evaluationResponse = await fetch('http://192.168.2.51:8000/qualityevaluations/', {
+      const evaluationResponse = await fetch('http://127.0.0.1:8000/qualityevaluations/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
@@ -1369,7 +1369,7 @@ function QualitySheet() {
       const evaluationId = evaluation.id;
 
       for (const sequence of qualityModule.sequences) {
-        const sequenceResponse = await fetch('http://192.168.2.51:8000/qualitysequences/', {
+        const sequenceResponse = await fetch('http://127.0.0.1:8000/qualitysequences/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify({
@@ -1398,7 +1398,7 @@ function QualitySheet() {
       }
 
       const calculateResponse = await fetch(
-        `http://192.168.2.51:8000/qualityevaluations/${evaluationId}/calculate_results/`,
+        `http://127.0.0.1:8000/qualityevaluations/${evaluationId}/calculate_results/`,
         { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' } }
       );
 

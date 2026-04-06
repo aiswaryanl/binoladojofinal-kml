@@ -44,7 +44,7 @@ interface TraineeInfo {
 }
 
 /* ---------- API URL ---------- */
-const API_URL = "http://192.168.2.51:8000/ojt-dashboard/";
+const API_URL = "http://127.0.0.1:8000/ojt-dashboard/";
 
 /* ---------- Component ---------- */
 const Level4OJTStatusList: React.FC = () => {

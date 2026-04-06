@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Edit, Trash2, Save, X, Settings } from "lucide-react";
 
-const API_BASE_URL = "http://192.168.2.51:8000";
+const API_BASE_URL = "http://127.0.0.1:8000";
 
 interface Level {
   level_id: number;
@@ -158,7 +158,7 @@ const TenCyclePage: React.FC = () => {
 
     console.log("Fetching stations for department:", selectedDepartment);
 
-    fetch(`http://192.168.2.51:8000/hierarchy/by-department/?department_id=${selectedDepartment}`)
+    fetch(`http://127.0.0.1:8000/hierarchy/by-department/?department_id=${selectedDepartment}`)
       .then(res => res.json())
       .then(data => {
         console.log("API response:", data);

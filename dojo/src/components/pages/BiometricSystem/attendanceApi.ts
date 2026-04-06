@@ -9,7 +9,7 @@ export interface AttendanceLog {
 
 // Allow filtering by Device ID and Date
 export const getAttendanceLogs = async (deviceId?: number, date?: string): Promise<AttendanceLog[]> => {
-  let url = 'http://192.168.2.51:8000/api/attendance-logs/';
+  let url = 'http://127.0.0.1:8000/api/attendance-logs/';
 
   const params = new URLSearchParams();
   if (deviceId) params.append('device_id', deviceId.toString());
@@ -28,8 +28,8 @@ export const getAttendanceLogs = async (deviceId?: number, date?: string): Promi
 // }
 
 // export const getAttendanceLogs = async (): Promise<AttendanceLog[]> => {
-//   // const res = await axios.get('http://192.168.2.51:8000/api/attendance-logs/');
-//   const res = await axios.get('http://192.168.2.51:8000/api/attendance-logs/');
+//   // const res = await axios.get('http://127.0.0.1:8000/api/attendance-logs/');
+//   const res = await axios.get('http://127.0.0.1:8000/api/attendance-logs/');
 //   return res.data.logs; // This is an array of logs
 // };
 

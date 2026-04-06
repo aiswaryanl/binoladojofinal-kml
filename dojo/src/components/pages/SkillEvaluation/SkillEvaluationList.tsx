@@ -37,7 +37,7 @@ interface EvaluationListItem {
 }
 
 /* ---------- API ---------- */
-const API_URL = "http://192.168.2.51:8000/skillevaluations/";
+const API_URL = "http://127.0.0.1:8000/skillevaluations/";
 
 /* ---------- Component ---------- */
 const SkillEvaluationList: React.FC = () => {
