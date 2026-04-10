@@ -3183,30 +3183,56 @@ from .models import Score,TrainingAttendance
 #             'created_at'
 #         ]
 
+# class CardScoreSerializer(serializers.ModelSerializer):
+#     employee_name = serializers.CharField(source='employee.first_name', read_only=True)
+#     # Change test_name to a SerializerMethodField
+#     test_name = serializers.SerializerMethodField()
+
+#     class Meta:
+#         model = Score
+#         fields = [
+#             'id',
+#             'employee_name',
+#             'test_name',
+#             'marks',
+#             'percentage',
+#             'passed',
+#             'test_date',
+#             'created_at'
+#         ]
+
+#     def get_test_name(self, obj):
+#         if obj.test and obj.test.test_name:
+#             name = obj.test.test_name
+#             # Splits "Individual_Test_2026-04-06" and takes everything except the last part
+#             parts = name.rsplit('_', 1) 
+#             return parts[0]
+#         return "Assessment"
+
+
+
 class CardScoreSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.first_name', read_only=True)
-    # Change test_name to a SerializerMethodField
     test_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Score
         fields = [
-            'id',
-            'employee_name',
-            'test_name',
-            'marks',
-            'percentage',
-            'passed',
-            'test_date',
-            'created_at'
+            'id', 'employee_name', 'test_name', 'marks', 
+            'percentage', 'passed', 'test_date', 'created_at'
         ]
 
     def get_test_name(self, obj):
         if obj.test and obj.test.test_name:
-            name = obj.test.test_name
-            # Splits "Individual_Test_2026-04-06" and takes everything except the last part
-            parts = name.rsplit('_', 1) 
-            return parts[0]
+            full_name = obj.test.test_name
+            
+            # 1. Look for the start of the date (e.g., 28/11/2025)
+            # This regex splits the string before the first digit it encounters
+            parts = re.split(r'\s\d', full_name, 1)
+            
+            # 2. Return the first part, cleaned of extra whitespace
+            return parts[0].strip()
+            
         return "Assessment"
 
 

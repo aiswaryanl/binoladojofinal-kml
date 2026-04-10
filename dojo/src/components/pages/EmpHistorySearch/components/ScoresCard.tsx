@@ -11,6 +11,10 @@ interface ScoresCardProps {
 
 const ScoresCard: React.FC<ScoresCardProps> = ({ scores, onDownload, downloadingId }) => {
     const isPassed = (score: Score) => typeof score.passed === 'boolean' ? score.passed : score.passed?.toLowerCase() === 'pass';
+    const formatAssessmentName = (testName?: string) => {
+        if (!testName) return "Assessment";
+        return testName.replace(/[-_]\d{4}-\d{2}-\d{2}$/, '');
+    };
 
     return (
         <div className='bg-white/80 backdrop-blur-sm p-8 rounded-3xl shadow-2xl border border-purple-100 hover:shadow-3xl transition-shadow duration-300 h-[520px] flex flex-col'>
@@ -25,7 +29,7 @@ const ScoresCard: React.FC<ScoresCardProps> = ({ scores, onDownload, downloading
                     <div className='flex-1 overflow-y-auto hide-scrollbar space-y-10'>
                         {scores.map((score) => (
                             <div key={score.id} className='bg-gradient-to-r from-yellow-50 to-orange-50 p-5 rounded-2xl border-l-4 border-yellow-500 hover:shadow-lg transition-all duration-200'>
-                                <h3 className='font-bold text-lg text-gray-800 mb-3'>{score.test_name || "Assessment"}</h3>
+                                <h3 className='font-bold text-lg text-gray-800 mb-3'>{formatAssessmentName(score.test_name)}</h3>
                                 <div className='flex justify-between text-base mb-2'><span className='text-gray-600 font-medium'>Score:</span><span className='font-bold text-purple-600'>{score.marks} ({score.percentage.toFixed(1)}%)</span></div>
                                 <div className='flex justify-between text-base mb-2'><span className='text-gray-600 font-medium'>Date:</span><span className='font-semibold'>{new Date(score.test_date || score.created_at).toLocaleDateString()}</span></div>
                                 <div className='flex justify-between text-base mb-2'><span className='text-gray-600 font-medium'>Result:</span><span className={`font-bold text-lg ${isPassed(score) ? "text-green-600" : "text-red-600"}`}>{isPassed(score) ? "PASS" : "FAIL"}</span></div>
