@@ -305,8 +305,10 @@ class HierarchyStructure(models.Model):
     subline = models.ForeignKey(SubLine, on_delete=models.CASCADE, related_name="hierarchy_structures", null=True, blank=True)
     station = models.ForeignKey(Station, on_delete=models.CASCADE, related_name="hierarchy_structures", null=True, blank=True)
 
-    def _str_(self):
-        return f"{self.structure_name}"
+    def __str__(self):
+        # return f"{self.department.department_name}"
+        return f"{self.structure_name} {self.department.department_name} ({self.station.station_name})"
+
 
     class Meta:
         db_table = "hierarchy_structure"
