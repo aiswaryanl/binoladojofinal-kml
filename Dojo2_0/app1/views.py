@@ -21123,54 +21123,95 @@ class AttendanceLogView(APIView):
 
 class AttendanceDatabaseView(APIView):
     """
-    READ-ONLY View for History Page.
-    Returns: Machine Name (Device Name)
+    View for History Page.
+    Returns: Daily Summary (default) or Detailed Timeline (type=detailed)
     """
     def get(self, request):
-        # date_str = request.query_params.get('date', datetime.now().strftime("%Y-%m-%d"))
         date_str = request.query_params.get('date', datetime.datetime.now().strftime("%Y-%m-%d"))
+        view_type = request.query_params.get('type', 'summary') # 'summary' or 'detailed'
 
-        # --- FIX: Wrapped query in parentheses ( ) to allow multi-line chaining ---
-        records = (AttendanceLog.objects.filter(date=date_str)
-            .select_related('bio_user', 'device')
-            .prefetch_related('device__machines') 
-            .order_by('bio_user__employeeid'))
+        if view_type == 'detailed':
+            # --- DETAILED TIMELINE (Every Punch) ---
+            records = (BiometricPunch.objects.filter(punch_time__date=date_str)
+                .select_related('bio_user', 'device')
+                .prefetch_related('device__machines')
+                .order_by('punch_time')) # Global Timeline sorted by time
 
-        data = []
-        for record in records:
-            last_punch_display = record.last_punch if record.last_punch != record.first_punch else "-"
-            
-            # --- NAME FORMATTING LOGIC ---
-            display_name = "Unknown Device"
-            
-            if record.device:
-                device_real_name = record.device.name
+            data = []
+            for record in records:
+                display_name = "Unknown Device"
+                if record.device:
+                    device_real_name = record.device.name
+                    linked_machine = record.device.machines.first()
+                    display_name = f"{linked_machine.name} ({device_real_name})" if linked_machine else device_real_name
+
+                data.append({
+                    "id": record.id,
+                    "employee_code": record.bio_user.employeeid,
+                    "employee_name": f"{record.bio_user.first_name} {record.bio_user.last_name}",
+                    "device_name": display_name,
+                    "time": record.punch_time.strftime("%H:%M:%S"),
+                    "date": record.punch_time.strftime("%Y-%m-%d")
+                })
+        else:
+            # --- DAILY SUMMARY (First/Last Punch) ---
+            records = (AttendanceLog.objects.filter(date=date_str)
+                .select_related('bio_user', 'device')
+                .prefetch_related('device__machines') 
+                .order_by('bio_user__employeeid'))
+
+            data = []
+            for record in records:
+                last_punch_display = record.last_punch if record.last_punch != record.first_punch else "-"
                 
-                # Check if this device is linked to a machine
-                linked_machine = record.device.machines.first()
-                
-                if linked_machine:
-                    # FORMAT: "Lathe 1 (Bio-01)"
-                    display_name = f"{linked_machine.name} ({device_real_name})"
-                else:
-                    # FORMAT: "Bio-01"
-                    display_name = device_real_name
+                display_name = "Unknown Device"
+                if record.device:
+                    device_real_name = record.device.name
+                    linked_machine = record.device.machines.first()
+                    display_name = f"{linked_machine.name} ({device_real_name})" if linked_machine else device_real_name
 
-            data.append({
-                "id": record.id,
-                "employee_code": record.bio_user.employeeid,
-                "employee_name": f"{record.bio_user.first_name} {record.bio_user.last_name}",
-                "device_name": display_name, 
-                "first_punch": record.first_punch.strftime("%H:%M:%S"),
-                "last_punch": last_punch_display.strftime("%H:%M:%S") if last_punch_display != "-" else "-",
-                "date": record.date
-            })
+                data.append({
+                    "id": record.id,
+                    "employee_code": record.bio_user.employeeid,
+                    "employee_name": f"{record.bio_user.first_name} {record.bio_user.last_name}",
+                    "device_name": display_name, 
+                    "first_punch": record.first_punch.strftime("%H:%M:%S"),
+                    "last_punch": last_punch_display.strftime("%H:%M:%S") if last_punch_display != "-" else "-",
+                    "date": record.date
+                })
 
         return Response({
             "date": date_str,
+            "type": view_type,
             "count": len(data),
             "logs": data
         }, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        """
+        ACTION: Smart Cleanup (Prune records older than X days)
+        """
+        action = request.data.get('action')
+        if action == 'cleanup':
+            # 1. Permission Check (Developer/Admin only)
+            # user = request.user
+            # if not user.role or user.role.name != 'Developer':
+            #     return Response({"error": "Unauthorized. Only Developers can prune logs."}, status=status.HTTP_403_FORBIDDEN)
+
+            # 2. Cutoff Logic (Keep last 3 months / 90 days)
+            days_to_keep = 90
+            cutoff_date = datetime.datetime.now() - datetime.timedelta(days=days_to_keep)
+            
+            # 3. Delete
+            deleted_count, _ = BiometricPunch.objects.filter(punch_time__lt=cutoff_date).delete()
+            
+            return Response({
+                "status": "success",
+                "message": f"Pruned {deleted_count} logs older than {days_to_keep} days.",
+                "cutoff_date": cutoff_date.strftime("%Y-%m-%d")
+            }, status=status.HTTP_200_OK)
+        
+        return Response({"error": "Invalid action"}, status=status.HTTP_400_BAD_REQUEST)
     
 
 

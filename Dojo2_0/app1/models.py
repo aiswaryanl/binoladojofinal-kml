@@ -3689,6 +3689,22 @@ class AttendanceLog(models.Model):
 
     def __str__(self):
         return f"{self.bio_user.employeeid} on {self.date}"
+
+class BiometricPunch(models.Model):
+    """
+    Stores EVERY individual punch for transaction history.
+    """
+    bio_user = models.ForeignKey(BioUser, on_delete=models.CASCADE, related_name='punches')
+    device = models.ForeignKey(BiometricDevice, on_delete=models.SET_NULL, null=True)
+    punch_time = models.DateTimeField() # Full timestamp (Date + Time)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-punch_time']
+        verbose_name = "Individual Punch Log"
+
+    def __str__(self):
+        return f"{self.bio_user.employeeid} at {self.punch_time}"
   
     
 

@@ -1,27 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { 
-  FiCalendar, FiCpu, FiUser, FiFilter, FiActivity, FiGrid, FiList, FiClock 
+  FiCalendar, FiCpu, FiUser, FiFilter, FiActivity, FiGrid, FiList, FiClock, FiTrash2, FiClock as FiTimeline
 } from 'react-icons/fi';
 
-// Interface
+// Interfaces
 interface DailyRecord {
   id: number;
   employee_code: string;
   employee_name: string;
-  device_name: string;   // e.g. "Lathe 1 (Bio-01)"
+  device_name: string;
   first_punch: string;
   last_punch: string;
   date: string;
 }
 
+interface DetailedRecord {
+  id: number;
+  employee_code: string;
+  employee_name: string;
+  device_name: string;
+  time: string;
+  date: string;
+}
+
 const AttendanceHistoryPage: React.FC = () => {
-  const [records, setRecords] = useState<DailyRecord[]>([]);
+  const [summaryRecords, setSummaryRecords] = useState<DailyRecord[]>([]);
+  const [detailedRecords, setDetailedRecords] = useState<DetailedRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // View Mode State: 'table' or 'grid'
+  // View Mode: 'table' or 'grid' (for summary)
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
+  // Type Mode: 'summary' or 'detailed'
+  const [typeMode, setTypeMode] = useState<'summary' | 'detailed'>('summary');
 
   // Filters
   const [selectedMachine, setSelectedMachine] = useState<string>('');
@@ -31,8 +43,12 @@ const AttendanceHistoryPage: React.FC = () => {
   const fetchHistory = async () => {
     setIsLoading(true);
     try {
-      const res = await axios.get(`http://127.0.0.1:8000/api/attendance-db/?date=${selectedDate}`);
-      setRecords(res.data.logs);
+      const res = await axios.get(`http://127.0.0.1:8000/api/attendance-db/?date=${selectedDate}&type=${typeMode}`);
+      if (typeMode === 'detailed') {
+        setDetailedRecords(res.data.logs);
+      } else {
+        setSummaryRecords(res.data.logs);
+      }
     } catch (err) {
       console.error("Failed to fetch history", err);
     } finally {
@@ -42,13 +58,24 @@ const AttendanceHistoryPage: React.FC = () => {
 
   useEffect(() => {
     fetchHistory();
-  }, [selectedDate]);
+  }, [selectedDate, typeMode]);
 
-  // Unique Machines List
-  const uniqueMachines = Array.from(new Set(records.map(r => r.device_name)));
+  // Handle Cleanup (Admin Action)
+  const handleCleanup = async () => {
+    if (!window.confirm("Are you sure you want to delete biometric logs older than 3 months? This action cannot be undone.")) {
+      return;
+    }
+    try {
+      const res = await axios.post(`http://127.0.0.1:8000/api/attendance-db/`, { action: 'cleanup' });
+      alert(res.data.message || "Cleanup successful");
+    } catch (err) {
+      console.error("Cleanup failed", err);
+      alert("Failed to perform cleanup.");
+    }
+  };
 
-  // Filter Logic
-  const filteredRecords = records.filter(r => {
+  // Filter Logic for Summary
+  const filteredSummary = summaryRecords.filter(r => {
     const matchesMachine = selectedMachine === '' || r.device_name === selectedMachine;
     const matchesId = searchId === '' || 
                       r.employee_code.toLowerCase().includes(searchId.toLowerCase()) || 
@@ -56,12 +83,23 @@ const AttendanceHistoryPage: React.FC = () => {
     return matchesMachine && matchesId;
   });
 
-  // Helper to Group Records by Machine (for Grid View)
-  const groupedRecords = uniqueMachines.reduce((acc, machine) => {
-    const machineRecords = filteredRecords.filter(r => r.device_name === machine);
-    if (machineRecords.length > 0) {
-      acc[machine] = machineRecords;
-    }
+  // Filter Logic for Detailed
+  const filteredDetailed = detailedRecords.filter(r => {
+    const matchesMachine = selectedMachine === '' || r.device_name === selectedMachine;
+    const matchesId = searchId === '' || 
+                      r.employee_code.toLowerCase().includes(searchId.toLowerCase()) || 
+                      r.employee_name.toLowerCase().includes(searchId.toLowerCase());
+    return matchesMachine && matchesId;
+  });
+
+  // Unique Machines List (from current records)
+  const currentRecords = typeMode === 'detailed' ? detailedRecords : summaryRecords;
+  const uniqueMachines = Array.from(new Set(currentRecords.map(r => r.device_name)));
+
+  // Group Summary Records by Machine (for Grid View)
+  const groupedSummary = uniqueMachines.reduce((acc, machine) => {
+    const machineRecords = filteredSummary.filter(r => r.device_name === machine);
+    if (machineRecords.length > 0) acc[machine] = machineRecords;
     return acc;
   }, {} as Record<string, DailyRecord[]>);
 
@@ -75,173 +113,216 @@ const AttendanceHistoryPage: React.FC = () => {
           <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
             <FiCpu className="text-blue-600" /> Machine Operator Logs
           </h1>
-          <p className="text-gray-500 mt-1">Track operator start times and active duration per machine.</p>
+          <p className="text-gray-500 mt-1">Track operator activity and individual biometric punches.</p>
         </div>
 
-        {/* --- CONTROLS --- */}
+        {/* --- MAIN CONTROLS --- */}
         <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-200">
             
-            {/* View Switcher Buttons */}
-            <div className="flex bg-gray-100 p-1 rounded-lg mr-2">
+            {/* 1. VIEW TYPE TOGGLE (Summary vs Detailed) */}
+            <div className="flex bg-gray-100 p-1 rounded-lg">
                 <button 
-                    onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-md transition ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    title="Machine Grid View"
+                    onClick={() => setTypeMode('summary')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition ${typeMode === 'summary' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
                 >
-                    <FiGrid />
+                    <FiList /> Daily Summary
                 </button>
                 <button 
-                    onClick={() => setViewMode('table')}
-                    className={`p-2 rounded-md transition ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    title="List View"
+                    onClick={() => setTypeMode('detailed')}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition ${typeMode === 'detailed' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500'}`}
                 >
-                    <FiList />
+                    <FiTimeline /> Global Timeline
                 </button>
             </div>
 
-            {/* Date Picker */}
+            {/* 2. GRID/TABLE TOGGLE (Only for summary) */}
+            {typeMode === 'summary' && (
+                <div className="flex bg-gray-100 p-1 rounded-lg">
+                    <button 
+                        onClick={() => setViewMode('grid')}
+                        className={`p-1.5 rounded-md transition ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
+                        title="Grid View"
+                    >
+                        <FiGrid />
+                    </button>
+                    <button 
+                        onClick={() => setViewMode('table')}
+                        className={`p-1.5 rounded-md transition ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
+                        title="Table View"
+                    >
+                        <FiList />
+                    </button>
+                </div>
+            )}
+
+            {/* 3. DATE PICKER */}
             <div className="relative">
                 <FiCalendar className="absolute left-3 top-3 text-gray-400" />
                 <input 
                     type="date" 
                     value={selectedDate}
                     onChange={e => setSelectedDate(e.target.value)}
-                    className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-gray-700 font-medium"
+                    className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-gray-700 font-medium text-sm"
                 />
             </div>
             
-            {/* Operator Search */}
+            {/* 4. OPERATOR SEARCH */}
             <div className="relative">
                 <FiUser className="absolute left-3 top-3 text-gray-400" />
                 <input 
                     placeholder="Search Operator..." 
                     value={searchId}
                     onChange={e => setSearchId(e.target.value)}
-                    className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 outline-none w-40"
+                    className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 outline-none w-40 text-sm"
                 />
             </div>
+
+            {/* 5. ADMIN CLEANUP (Pruning) */}
+            <button 
+                onClick={handleCleanup}
+                className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
+                title="Cleanup Historical Data (> 3 Months)"
+            >
+                <FiTrash2 size={18} />
+            </button>
         </div>
       </div>
 
       {/* --- CONTENT AREA --- */}
       
       {isLoading ? (
-         <div className="text-center py-20 text-gray-400 animate-pulse">Loading machine data...</div>
-      ) : filteredRecords.length === 0 ? (
+         <div className="text-center py-20 text-gray-400 animate-pulse">Loading machine activity...</div>
+      ) : (typeMode === 'summary' ? filteredSummary.length === 0 : filteredDetailed.length === 0) ? (
          <div className="text-center py-20 text-gray-400 bg-white rounded-xl border border-dashed border-gray-200">
             No records found for this date.
          </div>
       ) : (
         <>
-            {/* === VIEW 1: MACHINE GRID (The New User-Friendly View) === */}
-            {viewMode === 'grid' && (
-                <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Object.keys(groupedRecords).map((machineName) => (
-                        <div key={machineName} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                            
-                            {/* Card Header: Machine Name */}
-                            <div className="bg-gradient-to-r from-gray-50 to-white p-4 border-b border-gray-100 flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                        <FiActivity />
+            {/* === MODE A: DAILY SUMMARY === */}
+            {typeMode === 'summary' && (
+                <>
+                    {/* View 1: Machine Grid */}
+                    {viewMode === 'grid' && (
+                        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {Object.keys(groupedSummary).map((machineName) => (
+                                <div key={machineName} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
+                                    <div className="bg-gradient-to-r from-gray-50 to-white p-4 border-b border-gray-100 flex justify-between items-center">
+                                        <div className="flex items-center gap-2">
+                                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><FiActivity /></div>
+                                            <h3 className="font-bold text-gray-800 text-sm">{machineName}</h3>
+                                        </div>
                                     </div>
-                                    <h3 className="font-bold text-gray-800 text-sm">{machineName}</h3>
+                                    <div className="p-4 flex-1 space-y-3">
+                                        {groupedSummary[machineName].map((record) => (
+                                            <div key={record.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50/20">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">{record.employee_code.slice(0,2)}</div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-gray-700">{record.employee_name}</p>
+                                                        <p className="text-[10px] text-gray-400 font-mono uppercase">{record.employee_code}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <div className="text-xs font-mono text-gray-600">Start: {record.first_punch.slice(0,5)}</div>
+                                                    <div className="text-[10px] text-gray-400 font-mono">End: {record.last_punch === '-' ? 'Active' : record.last_punch.slice(0,5)}</div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
-                                <span className="text-xs font-medium bg-gray-100 text-gray-500 px-2 py-1 rounded-full">
-                                    {groupedRecords[machineName].length} Operators
-                                </span>
-                            </div>
+                            ))}
+                        </div>
+                    )}
 
-                            {/* Card Body: List of Operators */}
-                            <div className="p-4 flex-1">
-                                <div className="space-y-3">
-                                    {groupedRecords[machineName].map((record) => (
-                                        <div key={record.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50/30 transition group">
-                                            
-                                            {/* Operator Info */}
+                    {/* View 2: Table List */}
+                    {viewMode === 'table' && (
+                        <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                            <table className="w-full text-left">
+                                <thead className="bg-gray-50 border-b border-gray-100 text-xs uppercase text-gray-500 font-semibold">
+                                    <tr>
+                                        <th className="px-6 py-4">Operator</th>
+                                        <th className="px-6 py-4">Machine</th>
+                                        <th className="px-6 py-4 text-center">First Punch</th>
+                                        <th className="px-6 py-4 text-center">Last Punch</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {filteredSummary.map((record) => (
+                                        <tr key={record.id} className="hover:bg-blue-50/30 transition">
+                                            <td className="px-6 py-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-bold">{record.employee_code.slice(0,2)}</div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-800 text-xs">{record.employee_name}</p>
+                                                        <p className="text-[10px] text-gray-400 font-mono">{record.employee_code}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-xs text-gray-600 font-medium">{record.device_name}</td>
+                                            <td className="px-6 py-4 text-center text-xs font-mono">{record.first_punch}</td>
+                                            <td className="px-6 py-4 text-center text-xs font-mono text-blue-600">{record.last_punch}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {/* === MODE B: DETAILED GLOBAL TIMELINE === */}
+            {typeMode === 'detailed' && (
+                <div className="max-w-4xl mx-auto">
+                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative">
+                        {/* Timeline Connector Line */}
+                        <div className="absolute left-[2.45rem] top-8 bottom-8 w-0.5 bg-gray-100 z-0"></div>
+                        
+                        <div className="p-6 space-y-6">
+                            {filteredDetailed.map((record, idx) => (
+                                <div key={record.id} className="relative flex items-start gap-6 z-10">
+                                    
+                                    {/* Timeline Node (Time) */}
+                                    <div className="flex flex-col items-center">
+                                        <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center border-4 border-white shadow-sm ring-1 ring-purple-100">
+                                            <FiTimeline size={16} />
+                                        </div>
+                                        <span className="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter whitespace-nowrap bg-white px-1">
+                                            {record.time.slice(0,5)}
+                                        </span>
+                                    </div>
+
+                                    {/* Transaction Card */}
+                                    <div className="flex-1 bg-gray-50/50 hover:bg-white p-4 rounded-xl border border-gray-100 hover:border-purple-200 hover:shadow-md transition group">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold border border-indigo-200">
-                                                    {record.employee_code.slice(0,2)}
+                                                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-purple-600 font-bold text-sm border border-gray-100 shadow-sm">
+                                                    {record.employee_code.replace(/[^a-zA-Z0-9]/g, '').slice(0,2).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-bold text-gray-700">{record.employee_name}</p>
-                                                    <p className="text-[10px] text-gray-400 font-mono uppercase">{record.employee_code}</p>
+                                                    <h4 className="font-bold text-gray-800 text-sm">{record.employee_name}</h4>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <span className="text-[10px] text-gray-400 font-mono px-1.5 py-0.5 bg-white border border-gray-100 rounded">
+                                                            {record.employee_code}
+                                                        </span>
+                                                        <span className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider">
+                                                           •  Recorded Punch
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
 
-                                            {/* Time Info */}
-                                            <div className="text-right">
-                                                <div className="flex items-center gap-1 justify-end text-xs font-mono text-gray-600">
-                                                    <FiClock size={10} className="text-green-500"/>
-                                                    <span>{record.first_punch.slice(0,5)}</span>
-                                                </div>
-                                                <div className="text-[10px] text-gray-400 font-mono mt-0.5">
-                                                    to {record.last_punch === '-' ? 'Active' : record.last_punch.slice(0,5)}
+                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-lg group-hover:border-purple-100 transition">
+                                                <FiCpu className="text-gray-400" size={14}/>
+                                                <div>
+                                                    <p className="text-[9px] text-gray-400 uppercase font-bold leading-none mb-0.5">Machine</p>
+                                                    <p className="text-xs font-bold text-gray-700 leading-none">{record.device_name}</p>
                                                 </div>
                                             </div>
                                         </div>
-                                    ))}
+                                    </div>
                                 </div>
-                            </div>
-
-                            {/* Card Footer */}
-                            <div className="bg-gray-50 p-2 text-center border-t border-gray-100">
-                                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">
-                                    {selectedDate}
-                                </span>
-                            </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
-            )}
-
-
-            {/* === VIEW 2: TABLE LIST (The Old View) === */}
-            {viewMode === 'table' && (
-                <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-gray-50 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500 font-semibold">
-                                    <th className="px-6 py-4">Operator</th>
-                                    <th className="px-6 py-4">Machine Used</th>
-                                    <th className="px-6 py-4 text-center">Start Time</th>
-                                    <th className="px-6 py-4 text-center">End Time / Active</th>
-                                    <th className="px-6 py-4 text-center">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {filteredRecords.map((record) => (
-                                    <tr key={record.id} className="hover:bg-blue-50/30 transition duration-150">
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-bold">
-                                                    {record.employee_code.slice(0,2)}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-gray-800 text-sm">{record.employee_name}</p>
-                                                    <p className="text-xs text-gray-400 font-mono">{record.employee_code}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="px-2 py-1 text-xs rounded-md font-medium bg-gray-100 text-gray-600">
-                                                {record.device_name}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-center text-xs font-mono text-gray-700">
-                                            {record.first_punch}
-                                        </td>
-                                        <td className="px-6 py-4 text-center text-xs font-mono text-blue-600">
-                                            {record.last_punch}
-                                        </td>
-                                        <td className="px-6 py-4 text-center text-xs text-gray-400 font-mono">
-                                            {record.date}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             )}
@@ -253,202 +334,3 @@ const AttendanceHistoryPage: React.FC = () => {
 };
 
 export default AttendanceHistoryPage;
-
-// import React, { useEffect, useState } from 'react';
-// import axios from 'axios';
-// import { FiCalendar, FiCpu, FiUser, FiFilter, FiActivity } from 'react-icons/fi';
-
-// // Interface
-// interface DailyRecord {
-//   id: number;
-//   employee_code: string;
-//   employee_name: string;
-//   device_name: string;   // e.g. "Lathe 1 (Bio-01)"
-//   first_punch: string;
-//   last_punch: string;
-//   date: string;
-// }
-
-// const AttendanceHistoryPage: React.FC = () => {
-//   const [records, setRecords] = useState<DailyRecord[]>([]);
-//   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-//   const [isLoading, setIsLoading] = useState(false);
-
-//   // Filters
-//   const [selectedMachine, setSelectedMachine] = useState<string>('');
-//   const [searchId, setSearchId] = useState('');
-
-//   // Fetch Data
-//   const fetchHistory = async () => {
-//     setIsLoading(true);
-//     try {
-//       const res = await axios.get(`http://127.0.0.1:8000/api/attendance-db/?date=${selectedDate}`);
-//       setRecords(res.data.logs);
-//     } catch (err) {
-//       console.error("Failed to fetch history", err);
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     fetchHistory();
-//   }, [selectedDate]);
-
-//   // Unique Machines List
-//   const uniqueMachines = Array.from(new Set(records.map(r => r.device_name)));
-
-//   // Filter Logic
-//   const filteredRecords = records.filter(r => {
-//     const matchesMachine = selectedMachine === '' || r.device_name === selectedMachine;
-//     const matchesId = searchId === '' || 
-//                       r.employee_code.toLowerCase().includes(searchId.toLowerCase()) || 
-//                       r.employee_name.toLowerCase().includes(searchId.toLowerCase());
-//     return matchesMachine && matchesId;
-//   });
-
-//   return (
-//     <div className="min-h-screen bg-gray-50 p-8">
-      
-//       {/* --- HEADER --- */}
-//       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-end gap-4">
-//         <div>
-//           <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-//             <FiCpu className="text-blue-600" /> Machine Operator Logs
-//           </h1>
-//           <p className="text-gray-500 mt-1">Track operator start times and active duration per machine.</p>
-//         </div>
-
-//         {/* --- CONTROLS --- */}
-//         <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-200">
-            
-//             {/* Machine Filter */}
-//             <div className="relative group">
-//                 <FiFilter className="absolute left-3 top-3 text-gray-400" />
-//                 <select 
-//                     value={selectedMachine}
-//                     onChange={(e) => setSelectedMachine(e.target.value)}
-//                     className="pl-10 pr-8 py-2 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 outline-none appearance-none font-medium text-gray-700 min-w-[240px] cursor-pointer"
-//                 >
-//                     <option value="">All Machines</option>
-//                     {uniqueMachines.map(machine => (
-//                         <option key={machine} value={machine}>{machine}</option>
-//                     ))}
-//                 </select>
-//                 <div className="absolute right-3 top-3 pointer-events-none text-gray-400 text-xs">▼</div>
-//             </div>
-
-//             {/* Date Picker */}
-//             <div className="relative">
-//                 <FiCalendar className="absolute left-3 top-3 text-gray-400" />
-//                 <input 
-//                     type="date" 
-//                     value={selectedDate}
-//                     onChange={e => setSelectedDate(e.target.value)}
-//                     className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-gray-700 font-medium"
-//                 />
-//             </div>
-
-//             {/* Operator Search */}
-//             <div className="relative">
-//                 <FiUser className="absolute left-3 top-3 text-gray-400" />
-//                 <input 
-//                     placeholder="Search Operator..." 
-//                     value={searchId}
-//                     onChange={e => setSearchId(e.target.value)}
-//                     className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 outline-none w-48"
-//                 />
-//             </div>
-//         </div>
-//       </div>
-
-//       {/* --- TABLE --- */}
-//       <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-//         <div className="overflow-x-auto">
-//           <table className="w-full text-left border-collapse">
-//             <thead>
-//               <tr className="bg-gray-50 border-b border-gray-100 text-xs uppercase tracking-wider text-gray-500 font-semibold">
-//                 <th className="px-6 py-4">Operator</th>
-//                 <th className="px-6 py-4">Machine Used</th>
-//                 <th className="px-6 py-4 text-center">Start Time</th>
-//                 <th className="px-6 py-4 text-center">End Time / Last Active</th>
-//                 <th className="px-6 py-4 text-center">Date</th>
-//               </tr>
-//             </thead>
-            
-//             <tbody className="divide-y divide-gray-50">
-//               {isLoading ? (
-//                 <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-400 animate-pulse">Loading logs...</td></tr>
-//               ) : filteredRecords.length === 0 ? (
-//                 <tr><td colSpan={5} className="px-6 py-12 text-center text-gray-400">No machine logs found for this selection.</td></tr>
-//               ) : (
-//                 filteredRecords.map((record) => (
-//                   <tr key={record.id} className="hover:bg-blue-50/30 transition duration-150">
-                    
-//                     {/* Operator Name/ID */}
-//                     <td className="px-6 py-4">
-//                       <div className="flex items-center gap-3">
-//                         <div className="w-9 h-9 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold border border-indigo-200">
-//                             {record.employee_code.slice(0,2)}
-//                         </div>
-//                         <div>
-//                             <p className="font-bold text-gray-800 text-sm">{record.employee_name}</p>
-//                             <p className="text-xs text-gray-400 font-mono tracking-wide">{record.employee_code}</p>
-//                         </div>
-//                       </div>
-//                     </td>
-
-//                     {/* Machine Name */}
-//                     <td className="px-6 py-4">
-//                        <div className="flex items-center gap-2">
-//                           <FiActivity className="text-orange-400 shrink-0"/>
-//                           <span className={`px-2 py-1 text-xs rounded-md font-medium whitespace-nowrap ${selectedMachine === record.device_name ? 'bg-orange-50 text-orange-700 border border-orange-100' : 'bg-gray-100 text-gray-600'}`}>
-//                             {record.device_name}
-//                           </span>
-//                        </div>
-//                     </td>
-
-//                     {/* Start Time (First Punch) */}
-//                     <td className="px-6 py-4 text-center">
-//                         <span className="font-mono text-gray-700 font-bold bg-gray-100 px-3 py-1 rounded-md text-xs">
-//                             {record.first_punch}
-//                         </span>
-//                     </td>
-
-//                     {/* End Time (Last Punch) */}
-//                     <td className="px-6 py-4 text-center">
-//                         {record.last_punch === '-' ? (
-//                             <span className="text-gray-400 font-mono text-xs italic">Currently Active / One Punch</span>
-//                         ) : (
-//                             <span className="font-mono text-blue-700 font-bold bg-blue-50 px-3 py-1 rounded-md border border-blue-100 text-xs">
-//                                 {record.last_punch}
-//                             </span>
-//                         )}
-//                     </td>
-
-//                     {/* Date */}
-//                     <td className="px-6 py-4 text-center text-sm text-gray-400 font-mono">
-//                         {record.date}
-//                     </td>
-
-//                   </tr>
-//                 ))
-//               )}
-//             </tbody>
-//           </table>
-//         </div>
-        
-//         {/* Footer */}
-//         {!isLoading && filteredRecords.length > 0 && (
-//             <div className="px-6 py-3 bg-gray-50 border-t border-gray-100 text-xs text-gray-500 flex justify-between items-center">
-//                 <span>Total Operators: <strong>{filteredRecords.length}</strong></span>
-//                 {selectedMachine && <span className="bg-orange-50 text-orange-600 px-2 py-1 rounded">Machine: {selectedMachine}</span>}
-//             </div>
-//         )}
-//       </div>
-
-//     </div>
-//   );
-// };
-
-// export default AttendanceHistoryPage;

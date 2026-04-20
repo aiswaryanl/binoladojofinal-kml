@@ -664,7 +664,7 @@ def get_transactions_log_from_device(device_instance, from_datetime, to_datetime
 
 from django.utils.timezone import make_aware
 from datetime import datetime
-from .models import BioUser, AttendanceLog, BiometricDevice
+from .models import BioUser, AttendanceLog, BiometricDevice, BiometricPunch
 
 def save_log_entry(device_instance, employee_code, datetime_str):
     """
@@ -691,7 +691,15 @@ def save_log_entry(device_instance, employee_code, datetime_str):
         log_date = log_dt_aware.date()
         log_time = log_dt_aware.time()
 
-        # 3. Get or Create the Daily Record
+        # --- NEW: SAVE EVERY PUNCH (Transaction History) ---
+        BiometricPunch.objects.create(
+            bio_user=user,
+            device=device_instance,
+            punch_time=log_dt_aware
+        )
+        print(f"[Detailed Log] SAVED: {employee_code} at {log_dt_aware}")
+
+        # --- EXISTING: SAVE DAILY SUMMARY ---
         attendance_record, created = AttendanceLog.objects.get_or_create(
             bio_user=user,
             device=device_instance,

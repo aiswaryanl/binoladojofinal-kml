@@ -544,6 +544,7 @@ admin.site.register(AdvanceManpowerDashboard)
 
 from django.contrib import admin
 from .models import BiometricDevice, BioUser, BiometricEnrollment
+from .models import Machine, AttendanceLog, BiometricPunch
 
 # ---------------------------------------------------------
 # INLINE: Shows enrollments directly inside BioUser page
@@ -570,6 +571,19 @@ class BiometricDeviceAdmin(admin.ModelAdmin):
     test_url.short_description = "WSDL URL"
 
 # ---------------------------------------------------------
+# INLINE: Shows individual punch logs inside BioUser page
+# ---------------------------------------------------------
+class BiometricPunchInline(admin.TabularInline):
+    model = BiometricPunch
+    extra = 0
+    readonly_fields = ('punch_time', 'device', 'created_at')
+    can_delete = False
+    ordering = ('-punch_time',)
+
+    def has_add_permission(self, request, obj=None):
+        return False # Punches should come from the machine
+
+# ---------------------------------------------------------
 # 2. BIO USER ADMIN
 # ---------------------------------------------------------
 @admin.register(BioUser)
@@ -577,8 +591,8 @@ class BioUserAdmin(admin.ModelAdmin):
     list_display = ('employeeid', 'first_name', 'last_name', 'total_enrollments')
     search_fields = ('employeeid', 'first_name', 'last_name')
     
-    # This adds the table at the bottom of the User Page
-    inlines = [BiometricEnrollmentInline]
+    # This adds both synced devices and raw punch history at the bottom
+    inlines = [BiometricEnrollmentInline, BiometricPunchInline]
 
     def total_enrollments(self, obj):
         return obj.enrollments.count()
@@ -599,7 +613,6 @@ class BiometricEnrollmentAdmin(admin.ModelAdmin):
 
 
 from django.contrib import admin
-from .models import BioUser, BiometricDevice, BiometricEnrollment, Machine, AttendanceLog
 
 # ... (Keep your existing BioUser/Machine/Device admins here) ...
 
@@ -649,6 +662,21 @@ class AttendanceLogAdmin(admin.ModelAdmin):
             linked_machine = Machine.objects.filter(biometric_device=obj.device).first()
             return linked_machine.name if linked_machine else "(Gate/General)"
         return "-"
+
+@admin.register(BiometricPunch)
+class BiometricPunchAdmin(admin.ModelAdmin):
+    list_display = ('get_employee_id', 'get_employee_name', 'punch_time', 'device', 'created_at')
+    list_filter = ('punch_time', 'device')
+    search_fields = ('bio_user__employeeid', 'bio_user__first_name', 'device__name')
+    ordering = ('-punch_time',)
+
+    @admin.display(description='Emp ID')
+    def get_employee_id(self, obj):
+        return obj.bio_user.employeeid
+
+    @admin.display(description='Name')
+    def get_employee_name(self, obj):
+        return f"{obj.bio_user.first_name} {obj.bio_user.last_name}"
 
 
 
