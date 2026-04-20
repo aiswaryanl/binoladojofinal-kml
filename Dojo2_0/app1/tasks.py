@@ -189,9 +189,9 @@ def import_attendance_from_excel():
 
 
 
+#Biometric Essl Connection Start
 
-
-from datetime import datetime
+# (Removed redundant and shadowing import: from datetime import datetime)
 from .models import BiometricDevice
 from .utils import get_transactions_log_from_device, save_log_entry
 
@@ -199,17 +199,18 @@ from .utils import get_transactions_log_from_device, save_log_entry
 # 2. NEW AUTO-SYNC TASK (Add this at the bottom)
 # ====================================================
 @shared_task
-def auto_sync_machine_logs():
+def auto_sync_machine_logs(days_back=2):
     """
     Runs automatically (e.g., every 10 mins) to fetch logs
     from devices and save them to the DB.
     """
-    print(f"[Celery] Starting Auto-Sync at {datetime.now()}...")
+    print(f"[Celery] Starting Sync at {datetime.datetime.now()} (Range: last {days_back} days)...")
     
-    # 1. Setup Date Range (Today)
-    date_str = datetime.now().strftime("%Y-%m-%d")
-    from_dt = f"{date_str} 00:00:00"
-    to_dt = f"{date_str} 23:59:59"
+    # 1. Setup Date Range
+    end_date = datetime.datetime.now()
+    start_date = end_date - datetime.timedelta(days=days_back)
+    from_dt = start_date.strftime("%Y-%m-%d 00:00:00")
+    to_dt = end_date.strftime("%Y-%m-%d 23:59:59")
 
     devices = BiometricDevice.objects.all()
     
@@ -221,6 +222,7 @@ def auto_sync_machine_logs():
             
             if str_data:
                 log_lines = str_data.strip().split('\n')
+                print(f"[Celery] Found {len(log_lines)} logs for {device.name}")
                 for line in log_lines:
                     if line.strip():
                         parts = line.split('\t')
@@ -230,10 +232,44 @@ def auto_sync_machine_logs():
                             
                             # 3. SAVE TO DB (Uses the same logic as Live View)
                             save_log_entry(device, emp_code, time_str)
+            else:
+                print(f"[Celery] No logs returned for {device.name}")
 
         except Exception as e:
             print(f"[Celery] Error syncing {device.name}: {e}")
 
-    return "Auto-Sync Complete"
+    return f"Sync Complete for {len(devices)} devices."
+
+@shared_task
+def manual_sync_all_devices(start_date_str, end_date_str):
+    """
+    Manual trigger for historical logs across all machines.
+    """
+    from_dt = f"{start_date_str} 00:00:00"
+    to_dt = f"{end_date_str} 23:59:59"
+    
+    print(f"[Celery] Manual Sync Triggered: {from_dt} to {to_dt}")
+    
+    devices = BiometricDevice.objects.all()
+    for device in devices:
+        try:
+            result = get_transactions_log_from_device(device, from_dt, to_dt)
+            str_data = result.strDataList if hasattr(result, 'strDataList') else ""
+            if str_data:
+                log_lines = str_data.strip().split('\n')
+                print(f"[Celery] Manual Sync: Found {len(log_lines)} logs for {device.name}")
+                for line in log_lines:
+                    if line.strip():
+                        parts = line.split('\t')
+                        if len(parts) >= 2:
+                            save_log_entry(device, parts[0], parts[1])
+            else:
+                print(f"[Celery] Manual Sync: No logs found on {device.name} for this range.")
+        except Exception as e:
+            print(f"[Celery] Error in Manual Sync for {device.name}: {e}")
+            
+    return "Manual Sync All Complete"
+
+#Biometric Essl Connection End
 
 

@@ -21216,10 +21216,29 @@ class AttendanceDatabaseView(APIView):
 
 
 from .models import BiometricDevice, BiometricEnrollment
+from .tasks import manual_sync_all_devices
 
 class BiometricDeviceViewSet(viewsets.ModelViewSet):
     queryset = BiometricDevice.objects.all()
     serializer_class = BiometricDeviceSerializer
+
+    @action(detail=False, methods=['post'])
+    def sync_all(self, request):
+        """
+        Triggers a manual sync for all devices for a given date range.
+        """
+        start_date = request.data.get('start_date')
+        end_date = request.data.get('end_date')
+
+        if not start_date or not end_date:
+            return Response({"error": "start_date and end_date are required (YYYY-MM-DD)"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Trigger Celery Task
+        manual_sync_all_devices.delay(start_date, end_date)
+
+        return Response({
+            "message": f"Sync started in background for range: {start_date} to {end_date}. This may take a few minutes."
+        }, status=status.HTTP_202_ACCEPTED)
 
 class BiometricEnrollmentViewSet(viewsets.ReadOnlyModelViewSet):
     """

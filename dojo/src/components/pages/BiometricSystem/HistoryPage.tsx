@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { 
-  FiCalendar, FiCpu, FiUser, FiFilter, FiActivity, FiGrid, FiList, FiClock, FiTrash2, FiClock as FiTimeline
+  FiCalendar, FiCpu, FiUser, FiFilter, FiActivity, FiGrid, FiList, FiClock, FiTrash2, FiRefreshCw, FiClock as FiTimeline
 } from 'react-icons/fi';
 
 // Interfaces
@@ -39,6 +39,11 @@ const AttendanceHistoryPage: React.FC = () => {
   const [selectedMachine, setSelectedMachine] = useState<string>('');
   const [searchId, setSearchId] = useState('');
 
+  // Manual Sync State
+  const [syncRange, setSyncRange] = useState({ start: selectedDate, end: selectedDate });
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<{ type: 'info' | 'success' | 'error', text: string } | null>(null);
+
   // Fetch Data
   const fetchHistory = async () => {
     setIsLoading(true);
@@ -71,6 +76,29 @@ const AttendanceHistoryPage: React.FC = () => {
     } catch (err) {
       console.error("Cleanup failed", err);
       alert("Failed to perform cleanup.");
+    }
+  };
+
+  // Handle Manual Sync All
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    setSyncMessage({ type: 'info', text: "Starting synchronization for all machines..." });
+    try {
+      const res = await axios.post(`http://127.0.0.1:8000/biometric-devices/sync_all/`, {
+        start_date: syncRange.start,
+        end_date: syncRange.end
+      });
+      setSyncMessage({ type: 'success', text: res.data.message });
+      // Clear message after 5 seconds
+      setTimeout(() => setSyncMessage(null), 5000);
+    } catch (err: any) {
+      console.error("Sync failed", err);
+      setSyncMessage({ 
+        type: 'error', 
+        text: err.response?.data?.error || "Failed to start synchronization. Please check machine connectivity." 
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -107,6 +135,20 @@ const AttendanceHistoryPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-8">
       
+      {/* --- NOTIFICATIONS --- */}
+      {syncMessage && (
+          <div className="max-w-7xl mx-auto mb-4">
+              <div className={`p-4 rounded-xl shadow-md flex items-center gap-3 border animate-in fade-in slide-in-from-top-2 ${
+                  syncMessage.type === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 
+                  syncMessage.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 
+                  'bg-blue-50 border-blue-200 text-blue-700'
+              }`}>
+                  <FiActivity className={syncMessage.type === 'info' ? 'animate-pulse' : ''} />
+                  <span className="text-sm font-medium">{syncMessage.text}</span>
+              </div>
+          </div>
+      )}
+
       {/* --- HEADER --- */}
       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-end gap-4">
         <div>
@@ -114,6 +156,38 @@ const AttendanceHistoryPage: React.FC = () => {
             <FiCpu className="text-blue-600" /> Machine Operator Logs
           </h1>
           <p className="text-gray-500 mt-1">Track operator activity and individual biometric punches.</p>
+        </div>
+
+        {/* --- SYNC TOOL --- */}
+        <div className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-gray-200">
+            <div className="flex items-center gap-2">
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Sync Range</div>
+                <div className="flex items-center gap-1">
+                    <input 
+                        type="date" 
+                        value={syncRange.start}
+                        onChange={(e) => setSyncRange({...syncRange, start: e.target.value})}
+                        className="text-xs border-none bg-gray-100 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className="text-gray-400">→</span>
+                    <input 
+                        type="date" 
+                        value={syncRange.end}
+                        onChange={(e) => setSyncRange({...syncRange, end: e.target.value})}
+                        className="text-xs border-none bg-gray-100 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500"
+                    />
+                </div>
+            </div>
+            <button 
+                onClick={handleManualSync}
+                disabled={isSyncing}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition shadow-sm ${
+                    isSyncing ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
+                }`}
+            >
+                <FiRefreshCw className={isSyncing ? 'animate-spin' : ''} />
+                {isSyncing ? 'Syncing...' : 'Sync All'}
+            </button>
         </div>
 
         {/* --- MAIN CONTROLS --- */}

@@ -692,12 +692,13 @@ def save_log_entry(device_instance, employee_code, datetime_str):
         log_time = log_dt_aware.time()
 
         # --- NEW: SAVE EVERY PUNCH (Transaction History) ---
-        BiometricPunch.objects.create(
+        # Use get_or_create to prevent duplicates during manual re-syncs
+        BiometricPunch.objects.get_or_create(
             bio_user=user,
             device=device_instance,
             punch_time=log_dt_aware
         )
-        print(f"[Detailed Log] SAVED: {employee_code} at {log_dt_aware}")
+        print(f"[Detailed Log] PROCESSED: {employee_code} at {log_dt_aware}")
 
         # --- EXISTING: SAVE DAILY SUMMARY ---
         attendance_record, created = AttendanceLog.objects.get_or_create(
