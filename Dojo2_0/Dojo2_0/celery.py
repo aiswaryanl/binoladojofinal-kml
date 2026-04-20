@@ -23,4 +23,8 @@ app.conf.beat_schedule = {
         'task': 'app1.tasks.create_recurring_schedules',
         'schedule': crontab(hour=2, minute=0),  # Daily at 2 AM
     },
+    'auto-sync-biometric-logs-10m': {
+        'task': 'app1.tasks.auto_sync_machine_logs',
+        'schedule': 600.0,  # Every 10 minutes
+    },
 }

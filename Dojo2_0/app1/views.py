@@ -1,4 +1,4 @@
-from tokenize import Comment
+from django.utils import timezone
 import datetime
 
 
@@ -4941,12 +4941,6 @@ class HanchouResultCertificatePDF(APIView):
 
 
 
-# Make sure you have all necessary imports at the top of your views.py file
-import io
-from django.http import HttpResponse
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
 
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter, landscape
@@ -21145,13 +21139,14 @@ class AttendanceDatabaseView(APIView):
                     linked_machine = record.device.machines.first()
                     display_name = f"{linked_machine.name} ({device_real_name})" if linked_machine else device_real_name
 
+                local_dt = timezone.localtime(record.punch_time)
                 data.append({
                     "id": record.id,
                     "employee_code": record.bio_user.employeeid,
                     "employee_name": f"{record.bio_user.first_name} {record.bio_user.last_name}",
                     "device_name": display_name,
-                    "time": record.punch_time.strftime("%H:%M:%S"),
-                    "date": record.punch_time.strftime("%Y-%m-%d")
+                    "time": local_dt.strftime("%H:%M:%S"),
+                    "date": local_dt.strftime("%Y-%m-%d")
                 })
         else:
             # --- DAILY SUMMARY (First/Last Punch) ---

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { 
-  FiCalendar, FiCpu, FiUser, FiFilter, FiActivity, FiGrid, FiList, FiClock, FiTrash2, FiRefreshCw, FiClock as FiTimeline
+  FiCalendar, FiCpu, FiUser, FiActivity, FiGrid, FiList, FiClock, FiTrash2, FiRefreshCw, FiClock as FiTimeline, FiHash
 } from 'react-icons/fi';
 
 // Interfaces
@@ -30,13 +30,11 @@ const AttendanceHistoryPage: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // View Mode: 'table' or 'grid' (for summary)
+  // View Modes
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('grid');
-  // Type Mode: 'summary' or 'detailed'
   const [typeMode, setTypeMode] = useState<'summary' | 'detailed'>('summary');
 
-  // Filters
-  const [selectedMachine, setSelectedMachine] = useState<string>('');
+  // Filter & Search
   const [searchId, setSearchId] = useState('');
 
   // Manual Sync State
@@ -44,18 +42,25 @@ const AttendanceHistoryPage: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<{ type: 'info' | 'success' | 'error', text: string } | null>(null);
 
-  // Fetch Data
+  // Pagination/Expansion State (Industrial Density)
+  const [expandedMachines, setExpandedMachines] = useState<Record<string, boolean>>({});
+  const toggleMachineExpand = (machine: string) => {
+    setExpandedMachines(prev => ({ ...prev, [machine]: !prev[machine] }));
+  };
+
+  // API Call
   const fetchHistory = async () => {
     setIsLoading(true);
+    setExpandedMachines({});
     try {
       const res = await axios.get(`http://127.0.0.1:8000/api/attendance-db/?date=${selectedDate}&type=${typeMode}`);
       if (typeMode === 'detailed') {
-        setDetailedRecords(res.data.logs);
+        setDetailedRecords(res.data.logs || []);
       } else {
-        setSummaryRecords(res.data.logs);
+        setSummaryRecords(res.data.logs || []);
       }
     } catch (err) {
-      console.error("Failed to fetch history", err);
+      console.error("Fetch failed", err);
     } finally {
       setIsLoading(false);
     }
@@ -65,344 +70,375 @@ const AttendanceHistoryPage: React.FC = () => {
     fetchHistory();
   }, [selectedDate, typeMode]);
 
-  // Handle Cleanup (Admin Action)
-  const handleCleanup = async () => {
-    if (!window.confirm("Are you sure you want to delete biometric logs older than 3 months? This action cannot be undone.")) {
-      return;
-    }
-    try {
-      const res = await axios.post(`http://127.0.0.1:8000/api/attendance-db/`, { action: 'cleanup' });
-      alert(res.data.message || "Cleanup successful");
-    } catch (err) {
-      console.error("Cleanup failed", err);
-      alert("Failed to perform cleanup.");
-    }
-  };
-
-  // Handle Manual Sync All
   const handleManualSync = async () => {
     setIsSyncing(true);
-    setSyncMessage({ type: 'info', text: "Starting synchronization for all machines..." });
+    setSyncMessage({ type: 'info', text: "Sync in progress..." });
     try {
-      const res = await axios.post(`http://127.0.0.1:8000/biometric-devices/sync_all/`, {
+      await axios.post('http://127.0.0.1:8000/biometric-devices/sync_all/', {
         start_date: syncRange.start,
         end_date: syncRange.end
       });
-      setSyncMessage({ type: 'success', text: res.data.message });
-      // Clear message after 5 seconds
-      setTimeout(() => setSyncMessage(null), 5000);
+      setSyncMessage({ type: 'success', text: 'Sync sequence triggered. Fetching latest logs...' });
+      
+      // Wait for background task to start processing
+      setTimeout(() => {
+        fetchHistory();
+        setSyncMessage({ type: 'success', text: 'Sync complete. Dashboard updated!' });
+      }, 2000);
     } catch (err: any) {
-      console.error("Sync failed", err);
-      setSyncMessage({ 
-        type: 'error', 
-        text: err.response?.data?.error || "Failed to start synchronization. Please check machine connectivity." 
-      });
+      setSyncMessage({ type: 'error', text: "Sync failed. Check connection." });
     } finally {
       setIsSyncing(false);
     }
   };
 
-  // Filter Logic for Summary
-  const filteredSummary = summaryRecords.filter(r => {
-    const matchesMachine = selectedMachine === '' || r.device_name === selectedMachine;
-    const matchesId = searchId === '' || 
-                      r.employee_code.toLowerCase().includes(searchId.toLowerCase()) || 
-                      r.employee_name.toLowerCase().includes(searchId.toLowerCase());
-    return matchesMachine && matchesId;
-  });
+  const handleCleanup = async () => {
+    if (window.confirm("Purge logs older than 3 months?")) {
+      try {
+        await axios.post(`http://127.0.0.1:8000/api/attendance-db/`, { action: 'cleanup' });
+        fetchHistory();
+      } catch (err) { alert("Cleanup failed."); }
+    }
+  };
 
-  // Filter Logic for Detailed
-  const filteredDetailed = detailedRecords.filter(r => {
-    const matchesMachine = selectedMachine === '' || r.device_name === selectedMachine;
-    const matchesId = searchId === '' || 
-                      r.employee_code.toLowerCase().includes(searchId.toLowerCase()) || 
-                      r.employee_name.toLowerCase().includes(searchId.toLowerCase());
-    return matchesMachine && matchesId;
-  });
+  // Grouping Logic
+  const filteredSummary = summaryRecords.filter(r => 
+    searchId === '' || r.employee_code.toLowerCase().includes(searchId.toLowerCase()) || r.employee_name.toLowerCase().includes(searchId.toLowerCase())
+  );
 
-  // Unique Machines List (from current records)
+  const filteredDetailed = detailedRecords.filter(r => 
+    searchId === '' || r.employee_code.toLowerCase().includes(searchId.toLowerCase()) || r.employee_name.toLowerCase().includes(searchId.toLowerCase())
+  );
+
+  // Align EVERYTHING to Newest-First
+  const sortedSummary = [...filteredSummary].reverse();
+  const sortedDetailed = [...filteredDetailed].reverse();
+
   const currentRecords = typeMode === 'detailed' ? detailedRecords : summaryRecords;
-  const uniqueMachines = Array.from(new Set(currentRecords.map(r => r.device_name)));
+  
+  // High-Density Sorting: Sort machines by their LATEST punch time
+  const machineLastActivity: Record<string, string> = {};
+  currentRecords.forEach((r: any) => {
+    const activityTime = typeMode === 'detailed' ? r.time : r.last_punch;
+    if (!machineLastActivity[r.device_name] || activityTime > machineLastActivity[r.device_name]) {
+      machineLastActivity[r.device_name] = activityTime;
+    }
+  });
 
-  // Group Summary Records by Machine (for Grid View)
-  const groupedSummary = uniqueMachines.reduce((acc, machine) => {
-    const machineRecords = filteredSummary.filter(r => r.device_name === machine);
-    if (machineRecords.length > 0) acc[machine] = machineRecords;
+  const uniqueMachines = Array.from(new Set(currentRecords.map(r => r.device_name)))
+    .sort((a, b) => (machineLastActivity[b] || '').localeCompare(machineLastActivity[a] || ''));
+
+  const groupedSummary = uniqueMachines.reduce((acc, m) => {
+    const records = sortedSummary.filter(r => r.device_name === m)
+      .sort((a, b) => b.last_punch.localeCompare(a.last_punch)); // Internal sort
+    if (records.length > 0) acc[m] = records;
     return acc;
   }, {} as Record<string, DailyRecord[]>);
 
+  const groupedDetailed = uniqueMachines.reduce((acc, m) => {
+    const records = filteredDetailed.filter(r => r.device_name === m);
+    if (records.length > 0) acc[m] = records;
+    return acc;
+  }, {} as Record<string, DetailedRecord[]>);
+
+  // Industrial Metrics
+  const metrics = {
+    total: typeMode === 'detailed' ? detailedRecords.length : summaryRecords.length,
+    machines: uniqueMachines.length,
+    ops: new Set(currentRecords.map(r => r.employee_code)).size
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+    <div className="min-h-screen bg-gray-50 text-slate-900 font-sans">
       
-      {/* --- NOTIFICATIONS --- */}
-      {syncMessage && (
-          <div className="max-w-7xl mx-auto mb-4">
-              <div className={`p-4 rounded-xl shadow-md flex items-center gap-3 border animate-in fade-in slide-in-from-top-2 ${
-                  syncMessage.type === 'error' ? 'bg-red-50 border-red-200 text-red-700' : 
-                  syncMessage.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 
-                  'bg-blue-50 border-blue-200 text-blue-700'
-              }`}>
-                  <FiActivity className={syncMessage.type === 'info' ? 'animate-pulse' : ''} />
-                  <span className="text-sm font-medium">{syncMessage.text}</span>
-              </div>
+      {/* 1. INDUSTRIAL HEADER & STATS BAR */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+        <div className="max-w-screen-2xl mx-auto px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+             <div className="bg-blue-600 p-2 rounded-lg text-white shadow-sm"><FiCpu size={18}/></div>
+             <div>
+                <h1 className="text-lg font-black tracking-tight leading-none">MACHINE LOGS</h1>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Biometric System History</p>
+             </div>
           </div>
-      )}
 
-      {/* --- HEADER --- */}
-      <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row justify-between items-end gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-            <FiCpu className="text-blue-600" /> Machine Operator Logs
-          </h1>
-          <p className="text-gray-500 mt-1">Track operator activity and individual biometric punches.</p>
-        </div>
-
-        {/* --- SYNC TOOL --- */}
-        <div className="flex items-center gap-3 bg-white p-3 rounded-2xl shadow-sm border border-gray-200">
-            <div className="flex items-center gap-2">
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Sync Range</div>
-                <div className="flex items-center gap-1">
-                    <input 
-                        type="date" 
-                        value={syncRange.start}
-                        onChange={(e) => setSyncRange({...syncRange, start: e.target.value})}
-                        className="text-xs border-none bg-gray-100 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-gray-400">→</span>
-                    <input 
-                        type="date" 
-                        value={syncRange.end}
-                        onChange={(e) => setSyncRange({...syncRange, end: e.target.value})}
-                        className="text-xs border-none bg-gray-100 rounded-lg px-2 py-1 focus:ring-2 focus:ring-blue-500"
-                    />
+          <div className="flex items-center gap-2">
+             <div className="flex items-center gap-4 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-gray-400 uppercase">Records</span>
+                    <span className="text-sm font-black text-blue-600">{metrics.total}</span>
                 </div>
-            </div>
-            <button 
-                onClick={handleManualSync}
-                disabled={isSyncing}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition shadow-sm ${
-                    isSyncing ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'
-                }`}
-            >
-                <FiRefreshCw className={isSyncing ? 'animate-spin' : ''} />
-                {isSyncing ? 'Syncing...' : 'Sync All'}
-            </button>
-        </div>
-
-        {/* --- MAIN CONTROLS --- */}
-        <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl shadow-sm border border-gray-200">
-            
-            {/* 1. VIEW TYPE TOGGLE (Summary vs Detailed) */}
-            <div className="flex bg-gray-100 p-1 rounded-lg">
-                <button 
-                    onClick={() => setTypeMode('summary')}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition ${typeMode === 'summary' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
-                >
-                    <FiList /> Daily Summary
-                </button>
-                <button 
-                    onClick={() => setTypeMode('detailed')}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold transition ${typeMode === 'detailed' ? 'bg-white text-purple-600 shadow-sm' : 'text-gray-500'}`}
-                >
-                    <FiTimeline /> Global Timeline
-                </button>
-            </div>
-
-            {/* 2. GRID/TABLE TOGGLE (Only for summary) */}
-            {typeMode === 'summary' && (
-                <div className="flex bg-gray-100 p-1 rounded-lg">
-                    <button 
-                        onClick={() => setViewMode('grid')}
-                        className={`p-1.5 rounded-md transition ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
-                        title="Grid View"
-                    >
-                        <FiGrid />
-                    </button>
-                    <button 
-                        onClick={() => setViewMode('table')}
-                        className={`p-1.5 rounded-md transition ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}
-                        title="Table View"
-                    >
-                        <FiList />
-                    </button>
+                <div className="w-px h-4 bg-gray-200"></div>
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-gray-400 uppercase">Nodes</span>
+                    <span className="text-sm font-black text-gray-700">{metrics.machines}</span>
                 </div>
-            )}
-
-            {/* 3. DATE PICKER */}
-            <div className="relative">
-                <FiCalendar className="absolute left-3 top-3 text-gray-400" />
-                <input 
-                    type="date" 
-                    value={selectedDate}
-                    onChange={e => setSelectedDate(e.target.value)}
-                    className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 outline-none text-gray-700 font-medium text-sm"
-                />
-            </div>
-            
-            {/* 4. OPERATOR SEARCH */}
-            <div className="relative">
-                <FiUser className="absolute left-3 top-3 text-gray-400" />
-                <input 
-                    placeholder="Search Operator..." 
-                    value={searchId}
-                    onChange={e => setSearchId(e.target.value)}
-                    className="pl-10 pr-4 py-2 bg-gray-50 border-none rounded-lg focus:ring-2 focus:ring-blue-100 outline-none w-40 text-sm"
-                />
-            </div>
-
-            {/* 5. ADMIN CLEANUP (Pruning) */}
-            <button 
-                onClick={handleCleanup}
-                className="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition"
-                title="Cleanup Historical Data (> 3 Months)"
-            >
-                <FiTrash2 size={18} />
-            </button>
+                <div className="w-px h-4 bg-gray-200"></div>
+                <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black text-gray-400 uppercase">Operators</span>
+                    <span className="text-sm font-black text-indigo-600">{metrics.ops}</span>
+                </div>
+             </div>
+          </div>
         </div>
       </div>
 
-      {/* --- CONTENT AREA --- */}
-      
-      {isLoading ? (
-         <div className="text-center py-20 text-gray-400 animate-pulse">Loading machine activity...</div>
-      ) : (typeMode === 'summary' ? filteredSummary.length === 0 : filteredDetailed.length === 0) ? (
-         <div className="text-center py-20 text-gray-400 bg-white rounded-xl border border-dashed border-gray-200">
-            No records found for this date.
-         </div>
-      ) : (
-        <>
-            {/* === MODE A: DAILY SUMMARY === */}
-            {typeMode === 'summary' && (
-                <>
-                    {/* View 1: Machine Grid */}
-                    {viewMode === 'grid' && (
-                        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {Object.keys(groupedSummary).map((machineName) => (
-                                <div key={machineName} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
-                                    <div className="bg-gradient-to-r from-gray-50 to-white p-4 border-b border-gray-100 flex justify-between items-center">
-                                        <div className="flex items-center gap-2">
-                                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg"><FiActivity /></div>
-                                            <h3 className="font-bold text-gray-800 text-sm">{machineName}</h3>
-                                        </div>
-                                    </div>
-                                    <div className="p-4 flex-1 space-y-3">
-                                        {groupedSummary[machineName].map((record) => (
-                                            <div key={record.id} className="flex items-center justify-between p-3 rounded-lg border border-gray-100 bg-gray-50/20">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-bold">{record.employee_code.slice(0,2)}</div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-gray-700">{record.employee_name}</p>
-                                                        <p className="text-[10px] text-gray-400 font-mono uppercase">{record.employee_code}</p>
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <div className="text-xs font-mono text-gray-600">Start: {record.first_punch.slice(0,5)}</div>
-                                                    <div className="text-[10px] text-gray-400 font-mono">End: {record.last_punch === '-' ? 'Active' : record.last_punch.slice(0,5)}</div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* View 2: Table List */}
-                    {viewMode === 'table' && (
-                        <div className="max-w-7xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                            <table className="w-full text-left">
-                                <thead className="bg-gray-50 border-b border-gray-100 text-xs uppercase text-gray-500 font-semibold">
-                                    <tr>
-                                        <th className="px-6 py-4">Operator</th>
-                                        <th className="px-6 py-4">Machine</th>
-                                        <th className="px-6 py-4 text-center">First Punch</th>
-                                        <th className="px-6 py-4 text-center">Last Punch</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {filteredSummary.map((record) => (
-                                        <tr key={record.id} className="hover:bg-blue-50/30 transition">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-xs font-bold">{record.employee_code.slice(0,2)}</div>
-                                                    <div>
-                                                        <p className="font-bold text-gray-800 text-xs">{record.employee_name}</p>
-                                                        <p className="text-[10px] text-gray-400 font-mono">{record.employee_code}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-xs text-gray-600 font-medium">{record.device_name}</td>
-                                            <td className="px-6 py-4 text-center text-xs font-mono">{record.first_punch}</td>
-                                            <td className="px-6 py-4 text-center text-xs font-mono text-blue-600">{record.last_punch}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </>
-            )}
-
-            {/* === MODE B: DETAILED GLOBAL TIMELINE === */}
-            {typeMode === 'detailed' && (
-                <div className="max-w-4xl mx-auto">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden relative">
-                        {/* Timeline Connector Line */}
-                        <div className="absolute left-[2.45rem] top-8 bottom-8 w-0.5 bg-gray-100 z-0"></div>
-                        
-                        <div className="p-6 space-y-6">
-                            {filteredDetailed.map((record, idx) => (
-                                <div key={record.id} className="relative flex items-start gap-6 z-10">
-                                    
-                                    {/* Timeline Node (Time) */}
-                                    <div className="flex flex-col items-center">
-                                        <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center border-4 border-white shadow-sm ring-1 ring-purple-100">
-                                            <FiTimeline size={16} />
-                                        </div>
-                                        <span className="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter whitespace-nowrap bg-white px-1">
-                                            {record.time.slice(0,5)}
-                                        </span>
-                                    </div>
-
-                                    {/* Transaction Card */}
-                                    <div className="flex-1 bg-gray-50/50 hover:bg-white p-4 rounded-xl border border-gray-100 hover:border-purple-200 hover:shadow-md transition group">
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center text-purple-600 font-bold text-sm border border-gray-100 shadow-sm">
-                                                    {record.employee_code.replace(/[^a-zA-Z0-9]/g, '').slice(0,2).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <h4 className="font-bold text-gray-800 text-sm">{record.employee_name}</h4>
-                                                    <div className="flex items-center gap-2 mt-0.5">
-                                                        <span className="text-[10px] text-gray-400 font-mono px-1.5 py-0.5 bg-white border border-gray-100 rounded">
-                                                            {record.employee_code}
-                                                        </span>
-                                                        <span className="text-[10px] text-purple-400 font-semibold uppercase tracking-wider">
-                                                           •  Recorded Punch
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-lg group-hover:border-purple-100 transition">
-                                                <FiCpu className="text-gray-400" size={14}/>
-                                                <div>
-                                                    <p className="text-[9px] text-gray-400 uppercase font-bold leading-none mb-0.5">Machine</p>
-                                                    <p className="text-xs font-bold text-gray-700 leading-none">{record.device_name}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+      <div className="max-w-screen-2xl mx-auto p-4 md:p-6 space-y-6">
+        
+        {/* 2. ADVANCED TOOLBAR (INDUSTRIAL DENSITY) */}
+        <div className="flex flex-col lg:flex-row items-center gap-4 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+            
+            {/* SYNC TOOL BOX */}
+            <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100 w-full lg:w-auto">
+                <div className="flex items-center gap-1 pl-2">
+                    <FiRefreshCw className="text-gray-400" size={14}/>
+                    <input type="date" value={syncRange.start} onChange={e => setSyncRange({...syncRange, start: e.target.value})} className="text-[11px] font-bold bg-transparent border-none focus:ring-0 w-28 uppercase" />
+                    <span className="text-gray-300 text-xs">→</span>
+                    <input type="date" value={syncRange.end} onChange={e => setSyncRange({...syncRange, end: e.target.value})} className="text-[11px] font-bold bg-transparent border-none focus:ring-0 w-28 uppercase" />
                 </div>
-            )}
-        </>
-      )}
+                <button onClick={handleManualSync} disabled={isSyncing} className={`px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${isSyncing ? 'bg-gray-200 text-gray-400' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20'}`}>
+                    {isSyncing ? 'Syncing...' : 'Sync All Nodes'}
+                </button>
+            </div>
 
+            <div className="h-6 w-px bg-gray-100 hidden lg:block"></div>
+
+            {/* VIEWER CONTROLS */}
+            <div className="flex flex-wrap items-center gap-3 flex-1 w-full lg:w-auto">
+                {/* Mode Toggle */}
+                <div className="flex bg-gray-100 p-1 rounded-xl">
+                    <button onClick={() => setTypeMode('summary')} className={`px-4 py-2 rounded-lg text-[11px] font-black transition-all ${typeMode === 'summary' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}>SUMMARY</button>
+                    <button onClick={() => setTypeMode('detailed')} className={`px-4 py-2 rounded-lg text-[11px] font-black transition-all ${typeMode === 'detailed' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500'}`}>TIMELINE</button>
+                </div>
+
+                {/* Sub View Toggle */}
+                {typeMode === 'summary' && (
+                    <div className="flex bg-gray-100 p-1 rounded-xl">
+                        <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}><FiGrid size={14}/></button>
+                        <button onClick={() => setViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}><FiList size={14}/></button>
+                    </div>
+                )}
+
+                {/* Search & Date */}
+                <div className="flex flex-1 items-center gap-2">
+                    <div className="relative flex-1 group">
+                        <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14}/>
+                        <input placeholder="Search..." value={searchId} onChange={e => setSearchId(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-100 outline-none transition-all" />
+                    </div>
+                    <div className="relative w-36 group">
+                        <FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14}/>
+                        <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold outline-none uppercase" />
+                    </div>
+                    <button onClick={handleCleanup} className="p-2.5 text-gray-400 hover:text-red-500 transition-colors" title="Purge Records"><FiTrash2 size={16}/></button>
+                </div>
+            </div>
+        </div>
+
+        {/* 3. SYNC NOTIFICATIONS */}
+        {syncMessage && (
+            <div className={`p-3 rounded-xl border flex items-center gap-3 animate-in fade-in duration-300 ${syncMessage.type === 'error' ? 'bg-red-50 border-red-100 text-red-600' : syncMessage.type === 'success' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+                <FiActivity size={14} className={syncMessage.type === 'info' ? 'animate-pulse' : ''} />
+                <span className="text-[11px] font-black uppercase tracking-wider">{syncMessage.text}</span>
+            </div>
+        )}
+
+        {/* 4. CONTENT GRID (SUMMARY & TIMELINE) */}
+        <div className="min-h-[500px]">
+          {isLoading ? (
+             <div className="flex flex-col items-center justify-center py-40">
+                <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading Infrastructure...</span>
+             </div>
+          ) : (metrics.total === 0) ? (
+             <div className="flex flex-col items-center justify-center py-40 bg-white rounded-2xl border-2 border-dashed border-gray-100">
+                <FiHash size={32} className="text-gray-200 mb-2" />
+                <h3 className="font-bold text-gray-400">NO DATA FOUND</h3>
+             </div>
+          ) : (
+            <div className="space-y-6">
+                {/* SUMMARY MODE */}
+                {typeMode === 'summary' && (
+                    <>
+                        {viewMode === 'grid' && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {Object.keys(groupedSummary).map((m) => {
+                                    const expanded = expandedMachines[m];
+                                    const records = groupedSummary[m];
+                                    const visible = expanded ? records : records.slice(0, 5);
+                                    return (
+                                        <div key={m} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col hover:border-blue-200 transition-colors">
+                                            <div className="bg-gray-50/50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                                                    <h3 className="text-[11px] font-black text-gray-700 uppercase tracking-tight">{m}</h3>
+                                                </div>
+                                                <span className="text-[9px] font-bold text-gray-400">{records.length} OPS</span>
+                                            </div>
+                                            <div className="p-3 space-y-2">
+                                                {visible.map(r => (
+                                                    <div key={r.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-transparent hover:border-gray-200 transition-all group">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-7 h-7 rounded-md bg-white border border-gray-200 flex items-center justify-center text-[9px] font-black text-gray-500 group-hover:bg-blue-600 group-hover:text-white transition-colors">{r.employee_code.slice(-2)}</div>
+                                                            <div>
+                                                                <p className="text-[10px] font-black text-gray-700 leading-none">{r.employee_name}</p>
+                                                                <p className="text-[9px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">{r.employee_code}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-[10px] font-black text-blue-600">{r.first_punch.slice(0,5)}</p>
+                                                            <p className="text-[8px] font-black text-gray-300 mt-0.5">{r.last_punch === '-' ? 'ACTIVE' : r.last_punch.slice(0,5)}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {records.length > 5 && (
+                                                    <button onClick={() => toggleMachineExpand(m)} className="w-full py-2 text-[9px] font-black text-gray-400 uppercase tracking-widest hover:text-blue-600 transition-colors">
+                                                        {expanded ? 'Show Less' : `+ ${records.length - 5} More`}
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+
+                        {viewMode === 'table' && (
+                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                                <table className="w-full text-left">
+                                    <thead className="bg-gray-50/50 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">
+                                        <tr>
+                                            <th className="px-6 py-4">Operator Info</th>
+                                            <th className="px-6 py-4">Machine Node</th>
+                                            <th className="px-6 py-4 text-center">In Time</th>
+                                            <th className="px-6 py-4 text-center">Last Activity</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {sortedSummary.map(r => (
+                                            <tr key={r.id} className="hover:bg-blue-50/30 transition-colors group">
+                                                <td className="px-6 py-3">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400 group-hover:bg-blue-600 group-hover:text-white transition-colors uppercase">{r.employee_code.slice(-2)}</div>
+                                                        <div><p className="text-xs font-black text-gray-700">{r.employee_name}</p><p className="text-[9px] text-gray-400 font-bold tracking-tighter uppercase">{r.employee_code}</p></div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-3 text-[11px] font-black text-gray-600">{r.device_name}</td>
+                                                <td className="px-6 py-3 text-center"><span className="text-[10px] font-black text-gray-700 bg-white px-2 py-1 border border-gray-100 rounded shadow-sm">{r.first_punch}</span></td>
+                                                <td className="px-6 py-3 text-center"><span className="text-[10px] font-black text-blue-600 bg-blue-50/50 px-2 py-1 border border-blue-100 rounded shadow-sm">{r.last_punch}</span></td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {/* TIMELINE MODE (NEWEST-FIRST TIME RANGE) */}
+                {typeMode === 'detailed' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {Object.keys(groupedDetailed).map((m) => {
+                            const rawRecords = groupedDetailed[m];
+                            
+                            // 1. Group consecutive punches by the same user into "Sessions"
+                            const sessions: any[] = [];
+                            rawRecords.forEach(r => {
+                                const last = sessions[sessions.length - 1];
+                                if (last && last.employee_code === r.employee_code) {
+                                    last.end_time = r.time;
+                                    last.punches += 1;
+                                    last.raw_punches.push(r.time);
+                                } else {
+                                    sessions.push({ 
+                                        ...r, 
+                                        start_time: r.time, 
+                                        end_time: r.time, 
+                                        punches: 1,
+                                        raw_punches: [r.time]
+                                    });
+                                }
+                            });
+
+                            // 2. Newest First for Manufacturing
+                            const sortedSessions = [...sessions].reverse();
+                            const isExpanded = expandedMachines[m];
+                            const visibleSessions = isExpanded ? sortedSessions : sortedSessions.slice(0, 5);
+
+                            return (
+                                <div key={m} className="flex flex-col space-y-4">
+                                    <div className="flex items-center justify-between px-2">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></div>
+                                            <h3 className="text-[11px] font-black text-gray-700 uppercase tracking-tight">{m}</h3>
+                                        </div>
+                                        <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Live Forensics</span>
+                                    </div>
+                                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 relative space-y-6">
+                                        <div className="absolute left-[2.25rem] top-8 bottom-8 w-px bg-gray-100 z-0"></div>
+                                        {visibleSessions.map((session, idx) => {
+                                            const hasDuration = session.start_time !== session.end_time;
+                                            return (
+                                                <div key={`${session.id}-${idx}`} className="relative z-10 flex items-start gap-4 group">
+                                                    {/* TIME RANGE COLUMN (NEWEST AT TOP) */}
+                                                    <div className="flex flex-col items-center w-12 pt-1">
+                                                        <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                                                            <FiTimeline size={12}/>
+                                                        </div>
+                                                        <div className="mt-2 flex flex-col items-center gap-1">
+                                                            <span className="text-[10px] font-black text-blue-600 bg-blue-50 px-1 border border-blue-100 rounded shadow-sm" title="Latest Activity">
+                                                                {session.end_time.slice(0,5)}
+                                                            </span>
+                                                            {hasDuration && (
+                                                                <>
+                                                                    <div className="w-px h-2 bg-gray-200"></div>
+                                                                    <span className="text-[10px] font-black text-gray-400 bg-gray-50 px-1 border border-gray-100 rounded" title="Session Start">
+                                                                        {session.start_time.slice(0,5)}
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* ACTIVITY CARD */}
+                                                    <div className="flex-1 bg-gray-50/50 p-3 rounded-xl border border-transparent hover:border-blue-100 hover:bg-white hover:shadow-xl transition-all duration-300">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <h4 className="text-[11px] font-black text-gray-800 uppercase tracking-tight group-hover:text-blue-600 transition-colors">
+                                                                {session.employee_name}
+                                                            </h4>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[9px] font-black px-2 py-0.5 bg-blue-600 text-white rounded-lg shadow-sm">
+                                                                    {session.punches} {session.punches === 1 ? 'PUNCH' : 'PUNCHES'}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="px-2 py-0.5 bg-white border border-gray-100 rounded text-[9px] font-bold text-gray-400 shadow-sm">
+                                                                ID: {session.employee_code}
+                                                            </div>
+                                                            <div className="flex-1 h-px bg-gray-100"></div>
+                                                            <span className="text-[9px] text-blue-400 font-black uppercase tracking-tighter">
+                                                                {hasDuration ? 'ACTIVE SESSION' : 'INSTANT CHECK'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        {sessions.length > 5 && (
+                                            <button onClick={() => toggleMachineExpand(m)} className="w-full py-2 bg-gray-50 border border-transparent hover:border-gray-200 rounded-xl text-[9px] font-black text-gray-400 uppercase tracking-widest transition-all">
+                                                {isExpanded ? 'Collapse Session History' : `Review ${sessions.length - 5} Previous Blocks`}
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };
