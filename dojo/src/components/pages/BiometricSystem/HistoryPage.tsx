@@ -152,30 +152,30 @@ const AttendanceHistoryPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50 text-slate-900 font-sans">
       
       {/* 1. INDUSTRIAL HEADER & STATS BAR */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
+      <div className="bg-white/80 backdrop-blur-xl border-b border-gray-200/50 sticky top-0 z-30 shadow-sm">
         <div className="max-w-screen-2xl mx-auto px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
              <div className="bg-blue-600 p-2 rounded-lg text-white shadow-sm"><FiCpu size={18}/></div>
              <div>
                 <h1 className="text-lg font-black tracking-tight leading-none">MACHINE LOGS</h1>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mt-1">Biometric System History</p>
+                <p className="text-[10px] text-gray-600 font-bold uppercase tracking-wider mt-1">Biometric System History</p>
              </div>
           </div>
 
           <div className="flex items-center gap-2">
              <div className="flex items-center gap-4 bg-gray-50 px-4 py-2 rounded-xl border border-gray-100">
                 <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black text-gray-400 uppercase">Records</span>
+                    <span className="text-[10px] font-black text-gray-600 uppercase">Records</span>
                     <span className="text-sm font-black text-blue-600">{metrics.total}</span>
                 </div>
                 <div className="w-px h-4 bg-gray-200"></div>
                 <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black text-gray-400 uppercase">Nodes</span>
+                    <span className="text-[10px] font-black text-gray-600 uppercase">Nodes</span>
                     <span className="text-sm font-black text-gray-700">{metrics.machines}</span>
                 </div>
                 <div className="w-px h-4 bg-gray-200"></div>
                 <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-black text-gray-400 uppercase">Operators</span>
+                    <span className="text-[10px] font-black text-gray-600 uppercase">Operators</span>
                     <span className="text-sm font-black text-indigo-600">{metrics.ops}</span>
                 </div>
              </div>
@@ -186,17 +186,17 @@ const AttendanceHistoryPage: React.FC = () => {
       <div className="max-w-screen-2xl mx-auto p-4 md:p-6 space-y-6">
         
         {/* 2. ADVANCED TOOLBAR (INDUSTRIAL DENSITY) */}
-        <div className="flex flex-col lg:flex-row items-center gap-4 bg-white p-3 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex flex-col lg:flex-row items-center gap-4 bg-white p-3 rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] border border-gray-100/80 transition-all hover:shadow-md">
             
             {/* SYNC TOOL BOX */}
             <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-xl border border-gray-100 w-full lg:w-auto">
                 <div className="flex items-center gap-1 pl-2">
-                    <FiRefreshCw className="text-gray-400" size={14}/>
+                    <FiRefreshCw className="text-gray-600" size={14}/>
                     <input type="date" value={syncRange.start} onChange={e => setSyncRange({...syncRange, start: e.target.value})} className="text-[11px] font-bold bg-transparent border-none focus:ring-0 w-28 uppercase" />
-                    <span className="text-gray-300 text-xs">→</span>
+                    <span className="text-gray-500 text-xs">→</span>
                     <input type="date" value={syncRange.end} onChange={e => setSyncRange({...syncRange, end: e.target.value})} className="text-[11px] font-bold bg-transparent border-none focus:ring-0 w-28 uppercase" />
                 </div>
-                <button onClick={handleManualSync} disabled={isSyncing} className={`px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${isSyncing ? 'bg-gray-200 text-gray-400' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20'}`}>
+                <button onClick={handleManualSync} disabled={isSyncing} className={`px-4 py-2 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${isSyncing ? 'bg-gray-200 text-gray-600' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-500/20'}`}>
                     {isSyncing ? 'Syncing...' : 'Sync All Nodes'}
                 </button>
             </div>
@@ -214,22 +214,22 @@ const AttendanceHistoryPage: React.FC = () => {
                 {/* Sub View Toggle */}
                 {typeMode === 'summary' && (
                     <div className="flex bg-gray-100 p-1 rounded-xl">
-                        <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}><FiGrid size={14}/></button>
-                        <button onClick={() => setViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-400'}`}><FiList size={14}/></button>
+                        <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'}`}><FiGrid size={14}/></button>
+                        <button onClick={() => setViewMode('table')} className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600'}`}><FiList size={14}/></button>
                     </div>
                 )}
 
                 {/* Search & Date */}
                 <div className="flex flex-1 items-center gap-2">
                     <div className="relative flex-1 group">
-                        <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14}/>
+                        <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" size={14}/>
                         <input placeholder="Search..." value={searchId} onChange={e => setSearchId(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold focus:ring-2 focus:ring-blue-100 outline-none transition-all" />
                     </div>
                     <div className="relative w-36 group">
-                        <FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={14}/>
+                        <FiCalendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" size={14}/>
                         <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs font-bold outline-none uppercase" />
                     </div>
-                    <button onClick={handleCleanup} className="p-2.5 text-gray-400 hover:text-red-500 transition-colors" title="Purge Records"><FiTrash2 size={16}/></button>
+                    <button onClick={handleCleanup} className="p-2.5 text-gray-600 hover:text-red-500 transition-colors" title="Purge Records"><FiTrash2 size={16}/></button>
                 </div>
             </div>
         </div>
@@ -247,12 +247,12 @@ const AttendanceHistoryPage: React.FC = () => {
           {isLoading ? (
              <div className="flex flex-col items-center justify-center py-40">
                 <div className="w-10 h-10 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading Infrastructure...</span>
+                <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Loading Infrastructure...</span>
              </div>
           ) : (metrics.total === 0) ? (
              <div className="flex flex-col items-center justify-center py-40 bg-white rounded-2xl border-2 border-dashed border-gray-100">
                 <FiHash size={32} className="text-gray-200 mb-2" />
-                <h3 className="font-bold text-gray-400">NO DATA FOUND</h3>
+                <h3 className="font-bold text-gray-600">NO DATA FOUND</h3>
              </div>
           ) : (
             <div className="space-y-6">
@@ -266,32 +266,32 @@ const AttendanceHistoryPage: React.FC = () => {
                                     const records = groupedSummary[m];
                                     const visible = expanded ? records : records.slice(0, 5);
                                     return (
-                                        <div key={m} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col hover:border-blue-200 transition-colors">
+                                        <div key={m} className="bg-white rounded-2xl border border-gray-100/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.02)] overflow-hidden flex flex-col hover:border-blue-300 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                                             <div className="bg-gray-50/50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
                                                 <div className="flex items-center gap-2">
                                                     <div className="w-2 h-2 rounded-full bg-blue-600"></div>
                                                     <h3 className="text-[11px] font-black text-gray-700 uppercase tracking-tight">{m}</h3>
                                                 </div>
-                                                <span className="text-[9px] font-bold text-gray-400">{records.length} OPS</span>
+                                                <span className="text-[9px] font-bold text-gray-600">{records.length} OPS</span>
                                             </div>
                                             <div className="p-3 space-y-2">
                                                 {visible.map(r => (
-                                                    <div key={r.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-transparent hover:border-gray-200 transition-all group">
+                                                    <div key={r.id} className="flex items-center justify-between p-2 rounded-xl bg-gray-50/50 border border-gray-100/50 hover:bg-white hover:border-blue-100 hover:shadow-md transition-all group">
                                                         <div className="flex items-center gap-2">
                                                             <div className="w-7 h-7 rounded-md bg-white border border-gray-200 flex items-center justify-center text-[9px] font-black text-gray-500 group-hover:bg-blue-600 group-hover:text-white transition-colors">{r.employee_code.slice(-2)}</div>
                                                             <div>
                                                                 <p className="text-[10px] font-black text-gray-700 leading-none">{r.employee_name}</p>
-                                                                <p className="text-[9px] text-gray-400 font-bold mt-1 uppercase tracking-tighter">{r.employee_code}</p>
+                                                                <p className="text-[9px] text-gray-600 font-bold mt-1 uppercase tracking-tighter">{r.employee_code}</p>
                                                             </div>
                                                         </div>
                                                         <div className="text-right">
                                                             <p className="text-[10px] font-black text-blue-600">{r.first_punch.slice(0,5)}</p>
-                                                            <p className="text-[8px] font-black text-gray-300 mt-0.5">{r.last_punch === '-' ? 'ACTIVE' : r.last_punch.slice(0,5)}</p>
+                                                            <p className="text-[8px] font-black text-gray-500 mt-0.5">{r.last_punch === '-' ? 'ACTIVE' : r.last_punch.slice(0,5)}</p>
                                                         </div>
                                                     </div>
                                                 ))}
                                                 {records.length > 5 && (
-                                                    <button onClick={() => toggleMachineExpand(m)} className="w-full py-2 text-[9px] font-black text-gray-400 uppercase tracking-widest hover:text-blue-600 transition-colors">
+                                                    <button onClick={() => toggleMachineExpand(m)} className="w-full py-2 text-[9px] font-black text-gray-600 uppercase tracking-widest hover:text-blue-600 transition-colors">
                                                         {expanded ? 'Show Less' : `+ ${records.length - 5} More`}
                                                     </button>
                                                 )}
@@ -305,7 +305,7 @@ const AttendanceHistoryPage: React.FC = () => {
                         {viewMode === 'table' && (
                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                                 <table className="w-full text-left">
-                                    <thead className="bg-gray-50/50 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] border-b border-gray-100">
+                                    <thead className="bg-gray-50/50 text-[9px] font-black text-gray-600 uppercase tracking-[0.2em] border-b border-gray-100">
                                         <tr>
                                             <th className="px-6 py-4">Operator Info</th>
                                             <th className="px-6 py-4">Machine Node</th>
@@ -318,8 +318,8 @@ const AttendanceHistoryPage: React.FC = () => {
                                             <tr key={r.id} className="hover:bg-blue-50/30 transition-colors group">
                                                 <td className="px-6 py-3">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-black text-gray-400 group-hover:bg-blue-600 group-hover:text-white transition-colors uppercase">{r.employee_code.slice(-2)}</div>
-                                                        <div><p className="text-xs font-black text-gray-700">{r.employee_name}</p><p className="text-[9px] text-gray-400 font-bold tracking-tighter uppercase">{r.employee_code}</p></div>
+                                                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-black text-gray-600 group-hover:bg-blue-600 group-hover:text-white transition-colors uppercase">{r.employee_code.slice(-2)}</div>
+                                                        <div><p className="text-xs font-black text-gray-700">{r.employee_name}</p><p className="text-[9px] text-gray-600 font-bold tracking-tighter uppercase">{r.employee_code}</p></div>
                                                     </div>
                                                 </td>
                                                 <td className="px-6 py-3 text-[11px] font-black text-gray-600">{r.device_name}</td>
@@ -371,9 +371,9 @@ const AttendanceHistoryPage: React.FC = () => {
                                             <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></div>
                                             <h3 className="text-[11px] font-black text-gray-700 uppercase tracking-tight">{m}</h3>
                                         </div>
-                                        <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">Live Forensics</span>
+                                        {/* <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Live Forensics</span> */}
                                     </div>
-                                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 relative space-y-6">
+                                    <div className="bg-white rounded-3xl border border-gray-100/80 shadow-[0_4px_24px_-4px_rgba(0,0,0,0.03)] p-5 relative space-y-6">
                                         <div className="absolute left-[2.25rem] top-8 bottom-8 w-px bg-gray-100 z-0"></div>
                                         {visibleSessions.map((session, idx) => {
                                             const hasDuration = session.start_time !== session.end_time;
@@ -391,7 +391,7 @@ const AttendanceHistoryPage: React.FC = () => {
                                                             {hasDuration && (
                                                                 <>
                                                                     <div className="w-px h-2 bg-gray-200"></div>
-                                                                    <span className="text-[10px] font-black text-gray-400 bg-gray-50 px-1 border border-gray-100 rounded" title="Session Start">
+                                                                    <span className="text-[10px] font-black text-gray-600 bg-gray-50 px-1 border border-gray-100 rounded" title="Session Start">
                                                                         {session.start_time.slice(0,5)}
                                                                     </span>
                                                                 </>
@@ -400,7 +400,7 @@ const AttendanceHistoryPage: React.FC = () => {
                                                     </div>
 
                                                     {/* ACTIVITY CARD */}
-                                                    <div className="flex-1 bg-gray-50/50 p-3 rounded-xl border border-transparent hover:border-blue-100 hover:bg-white hover:shadow-xl transition-all duration-300">
+                                                    <div className="flex-1 bg-gray-50/80 p-4 rounded-2xl border border-gray-100/50 hover:border-blue-200 hover:bg-gradient-to-r hover:from-white hover:to-blue-50/30 hover:shadow-lg transition-all duration-300 transform group-hover:scale-[1.02]">
                                                         <div className="flex items-center justify-between mb-2">
                                                             <h4 className="text-[11px] font-black text-gray-800 uppercase tracking-tight group-hover:text-blue-600 transition-colors">
                                                                 {session.employee_name}
@@ -412,7 +412,7 @@ const AttendanceHistoryPage: React.FC = () => {
                                                             </div>
                                                         </div>
                                                         <div className="flex items-center gap-2">
-                                                            <div className="px-2 py-0.5 bg-white border border-gray-100 rounded text-[9px] font-bold text-gray-400 shadow-sm">
+                                                            <div className="px-2 py-0.5 bg-white border border-gray-100 rounded text-[9px] font-bold text-gray-600 shadow-sm">
                                                                 ID: {session.employee_code}
                                                             </div>
                                                             <div className="flex-1 h-px bg-gray-100"></div>
@@ -425,7 +425,7 @@ const AttendanceHistoryPage: React.FC = () => {
                                             );
                                         })}
                                         {sessions.length > 5 && (
-                                            <button onClick={() => toggleMachineExpand(m)} className="w-full py-2 bg-gray-50 border border-transparent hover:border-gray-200 rounded-xl text-[9px] font-black text-gray-400 uppercase tracking-widest transition-all">
+                                            <button onClick={() => toggleMachineExpand(m)} className="w-full py-2 bg-gray-50 border border-transparent hover:border-gray-200 rounded-xl text-[9px] font-black text-gray-600 uppercase tracking-widest transition-all">
                                                 {isExpanded ? 'Collapse Session History' : `Review ${sessions.length - 5} Previous Blocks`}
                                             </button>
                                         )}
