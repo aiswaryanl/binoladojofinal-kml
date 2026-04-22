@@ -531,9 +531,7 @@ admin.site.register(RetrainingSession)
 
 from .models import BiometricAttendance
 
-from .models import Role
-
-admin.site.register(Role)
+# Role is registered below with RoleAdmin
 
 # -----------------------ESSL Biometric Man-Machine interlinkage ----------------------------
 
@@ -856,3 +854,44 @@ class PlantedDefectAdmin(admin.ModelAdmin):
 
 from .models import AttritionRecord
 admin.site.register(AttritionRecord)
+
+
+
+
+from django.contrib import admin
+from .models import Role, AppModule, RolePermission
+
+# 1. Customizing the Module Table (The Tiles and Links)
+@admin.register(AppModule)
+class AppModuleAdmin(admin.ModelAdmin):
+    list_display = ('name', 'key', 'parent')
+    list_filter = ('parent',)
+    search_fields = ('name', 'key')
+    ordering = ('parent__name', 'name')
+
+
+
+# 2. Creating an Inline for Permissions
+# This allows you to manage permissions directly inside the Role page
+class RolePermissionInline(admin.TabularInline):
+    model = RolePermission
+    extra = 1 # Number of empty rows to show
+    autocomplete_fields = ['module'] # Helpful if you have many modules
+
+# 3. Customizing the Role Table
+@admin.register(Role)
+class RoleAdmin(admin.ModelAdmin):
+    list_display = ('name', 'is_active', 'created_at')
+    search_fields = ('name',)
+    inlines = [RolePermissionInline]
+
+# 4. Optional: Register RolePermission separately if you want to see all logs
+@admin.register(RolePermission)
+class RolePermissionAdmin(admin.ModelAdmin):
+    list_display = ('role', 'module', 'is_allowed')
+    list_filter = ('role', 'is_allowed', 'module')
+    list_editable = ('is_allowed',) # Allows quick toggle from the list view
+
+
+# @admin.register(RolePermission)
+# class RolePermission(ModelAdmin): pass

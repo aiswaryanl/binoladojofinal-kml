@@ -98,6 +98,11 @@ import NotFound from './components/pages/NotFound/NotFound';
 import PoisonTestSheet from './components/pages/PoisonTestReport/PoisonTestReport';
 import DefectManagementSettings from './components/pages/method/PoinsonDefectsettingspage/Defectsettingspage';
 import PoisonTestManagement from './components/pages/PoisonTestReport/poisoncakeplan';
+import RolePermissions from './components/pages/RolePermissions'
+
+
+
+import PermissionRoute from './components/routing/PermissionRoute';
 
 
 function App() {
@@ -203,6 +208,8 @@ function App() {
             <Route path="/poison-test" element={<PoisonTestSheet/>} />
             <Route path="/defect-settings" element={<DefectManagementSettings />} />
             <Route path="/poison-cake" element={<PoisonTestManagement />} />
+            
+            <Route path='/RolePermissions' element={<RolePermissions />} />
 
 
           </Route>

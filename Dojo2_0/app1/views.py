@@ -41,6 +41,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import ValidationError
+from .models import AppModule, RolePermission  
 
 from .serializers import LoginSerializer
 from .models import User
@@ -89,6 +90,27 @@ class LoginAPIView(APIView):
         refresh = RefreshToken.for_user(user)
         access_token = str(refresh.access_token)
 
+
+        # --- DYNAMIC PERMISSION LOGIC ---
+        user_permissions = []
+        role_obj = getattr(user, 'role', None)
+        
+        if role_obj:
+            role_name_lower = role_obj.name.lower()
+            
+            # 1. Check for Full Access Roles (Case Insensitive)
+            if role_name_lower in ['admin', 'developer']:
+                # Return every single key in the database
+                user_permissions = list(AppModule.objects.values_list('key', flat=True))
+            else:
+                # 2. Return only assigned permissions for this specific role
+                user_permissions = list(RolePermission.objects.filter(
+                    role=role_obj, 
+                    is_allowed=True
+                ).values_list('module__key', flat=True))
+        # --------------------------------
+
+
         # Build user payload safely (use getattr with defaults)
         user_payload = {
             'email': getattr(user, 'email', None),
@@ -96,7 +118,9 @@ class LoginAPIView(APIView):
             'last_name': getattr(user, 'last_name', None),
             'employeeid': getattr(user, 'employeeid', None),
             # Prefer returning primitive values (ids or names) for related objects:
-            'role': getattr(getattr(user, 'role', None), 'name', None),
+            # 'role': getattr(getattr(user, 'role', None), 'name', None),
+            'role': getattr(role_obj, 'name', None),
+            'permissions': user_permissions,  # <--- NOW RETURNING THE LIST
             'hq': getattr(getattr(user, 'hq', None), 'name', getattr(user, 'hq', None)),
             'factory': getattr(getattr(user, 'factory', None), 'name', getattr(user, 'factory', None)),
             'department': getattr(getattr(user, 'department', None), 'name', getattr(user, 'department', None)),
@@ -200,8 +224,22 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 class RoleViewSet(viewsets.ModelViewSet):
-    queryset = Role.objects.all()
+    # queryset = Role.objects.all()
     serializer_class = RoleSerializer
+
+    def get_queryset(self):
+        # Only return active roles to the frontend
+        # return Role.objects.filter(is_active=True)
+        return Role.objects.all()
+
+    # This custom action is accessible at /roles/{id}/toggle_status/
+    @action(detail=True, methods=['post'])
+    def toggle_status(self, request, pk=None):
+        role = self.get_object()
+        role.is_active = not role.is_active
+        role.save()
+        return Response({'status': 'status toggled', 'is_active': role.is_active})
+
 
     def get_permissions(self):
         if self.action in ["create", "list"]:
@@ -23401,3 +23439,195 @@ class AttritionRecordViewSet(viewsets.ModelViewSet):
 
 # ==========attrition======================================
 
+
+
+
+
+# --------------------- Role Permissions Start --------------------
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .models import Role, AppModule, RolePermission
+
+class PermissionMatrixView(APIView):
+    def get(self, request):
+        # This returns all modules and current role settings for the Matrix UI
+        roles = Role.objects.all()
+        role_data = [
+                    {"id": r.id, "name": r.name} for r in roles
+                ]
+        # 2. Fetch all Modules (Hierarchical)
+        modules = AppModule.objects.all()
+        module_data = []
+
+        # We find Parent modules first
+        for mod in modules.filter(parent__isnull=True):
+            sub_modules = modules.filter(parent=mod)
+            module_data.append({
+                "id": mod.id,
+                "name": mod.name,
+                "key": mod.key,
+                "sub_modules": [
+                    {"id": sub.id, "name": sub.name, "key": sub.key} 
+                    for sub in sub_modules
+                ]
+            })
+
+        # 3. Fetch current mappings
+        # This tells the frontend which checkboxes are currently checked
+        permissions = RolePermission.objects.filter(is_allowed=True)
+        permission_mapping = [
+            {"role_id": p.role_id, "module_id": p.module_id} 
+            for p in permissions
+        ]
+
+        # logic to build a grid for the React frontend
+        return Response({
+            "roles": role_data, 
+            "modules": module_data,
+            "current_permissions": permission_mapping
+        })
+
+    def post(self, request):
+        # This saves the checkbox changes from the Settings page
+        role_id = request.data.get('role_id')
+        permissions = request.data.get('permissions') # List of {module_id, is_allowed}
+        
+        
+        if not role_id:
+            return Response({"error": "Role ID is required"}, status=400)
+        
+
+        # STEP 1: Deactivate all current permissions for this role
+        # This handles the "Unchecking" logic
+        RolePermission.objects.filter(role_id=role_id).update(is_allowed=False)
+
+
+        # STEP 2: Update or create the ones that are now allowed
+        for p in permissions:
+            RolePermission.objects.update_or_create(
+                role_id=role_id, 
+                module_id=p['module_id'], 
+                defaults={'is_allowed': True}
+                # defaults={'is_allowed': p['is_allowed']}
+            )
+        return Response({"message": "Permissions updated successfully"})
+
+
+class RolePermissionsDetailView(APIView):
+    """
+    Returns only the IDs of modules that are 'checked' for a specific role.
+    This makes the frontend checkbox logic very simple.
+    """
+    def get(self, request, role_id):
+        # Fetch only the IDs where is_allowed is True
+        allowed_ids = RolePermission.objects.filter(
+            role_id=role_id, 
+            is_allowed=True
+        ).values_list('module_id', flat=True)
+        
+        return Response(list(allowed_ids), status=status.HTTP_200_OK)
+
+class ModuleManagementView(APIView):
+    """
+    Allows the client to add new Modules (Tiles) or Sub-modules (Links) 
+    directly through a settings UI if they want to expand the system.
+    """
+    def get(self, request):
+        # Returns a simple list of all modules for a management list
+        modules = AppModule.objects.all().values('id', 'name', 'key', 'parent_id')
+        return Response(modules)
+
+    def post(self, request):
+        name = request.data.get('name')
+        # Normalize key: lowercase and replace spaces with underscores
+        key = request.data.get('key').lower().replace(" ", "_")
+        parent_id = request.data.get('parent_id') # None if it's a main Tile
+
+        module, created = AppModule.objects.get_or_create(
+            key=key,
+            defaults={'name': name, 'parent_id': parent_id}
+        )
+        return Response({
+            "message": "Module created/updated", 
+            "id": module.id, 
+            "created": created
+        })
+
+
+
+
+class SyncModulesView(APIView):
+    """
+    Receives the full list of tiles from the frontend (tileData.ts)
+    and ensures the database AppModule table matches.
+    """
+    def post(self, request):
+        tiles = request.data.get('tiles', [])
+        
+        created_count = 0
+        updated_count = 0
+        skipped_keys = []
+        
+        processed_keys = set()
+        
+        print(f"DEBUG: Received {len(tiles)} tiles")
+        
+        for tile in tiles:
+            # 1. Sync Parent Tile
+            title = tile.get('title')
+            key = tile.get('permissionKey')
+            print(f"DEBUG: Processing Parent Key: {key}")
+            
+            # Skip if we've already processed this key in this request
+            if key in processed_keys:
+                print(f"DEBUG: SKIPPING Duplicate Parent Key: {key}")
+                skipped_keys.append(key)
+                continue # Skip this tile entirely to avoid overwriting with duplicate data
+            
+            processed_keys.add(key)
+            
+            parent_module, created = AppModule.objects.update_or_create(
+                key=key,
+                defaults={'name': title, 'parent': None}
+            )
+            
+            if created:
+                created_count += 1
+            else:
+                updated_count += 1
+                
+            # 2. Sync Child Links
+            links = tile.get('links', [])
+            for link in links:
+                link_name = link.get('name')
+                link_key = link.get('permissionKey')
+                print(f"DEBUG: Processing Child Key: {link_key}")
+                
+                # Skip if we've already processed this child key
+                if link_key in processed_keys:
+                    print(f"DEBUG: SKIPPING Duplicate Child Key: {link_key}")
+                    skipped_keys.append(link_key)
+                    continue
+                
+                processed_keys.add(link_key)
+                
+                _, link_created = AppModule.objects.update_or_create(
+                    key=link_key,
+                    defaults={'name': link_name, 'parent': parent_module}
+                )
+                
+                if link_created:
+                    created_count += 1
+                else:
+                    updated_count += 1
+                    
+        return Response({
+            "message": "Sync complete",
+            "created": created_count,
+            "updated": updated_count,
+            "skipped_keys": skipped_keys
+        })
+
+
+# ---------------------- Role Permissions End -------------------------------------

@@ -5069,3 +5069,35 @@ class AttritionRecord(models.Model):
     def __str__(self):
         return f"Attrition - {self.date.strftime('%B %Y')}"
 # ==========attrition======================================
+
+
+
+#-----------Role Premission--------------------
+
+class AppModule(models.Model):
+    """
+    Represents a Tile or a specific Link inside a Tile.
+    """
+    name = models.CharField(max_length=100)  # Display Name (e.g., 'Dashboard')
+    key = models.CharField(max_length=100, unique=True) # Unique key (e.g., 'dashboard_main')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='sub_modules')
+    
+    def __str__(self):
+        return f"{self.name} ({self.key})"
+
+class RolePermission(models.Model):
+    """
+    The link between Roles and AppModules.
+    """
+    role = models.ForeignKey('Role', on_delete=models.CASCADE, related_name='module_permissions')
+    module = models.ForeignKey(AppModule, on_delete=models.CASCADE)
+    is_allowed = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ('role', 'module')
+
+    def __str__(self):
+        return f"{self.role.name} - {self.module.key}: {self.is_allowed}"
+
+
+#----------Role permissions End ---------------------------------

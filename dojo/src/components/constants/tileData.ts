@@ -17,16 +17,18 @@ import {
   FileSliders,
   ChartNoAxesCombined,
   FileChartColumn,
-  ClipboardPenLine
+  ClipboardPenLine,
+  ShieldCheck
 } from 'lucide-react';
 
 export const tiles = [
   {
     title: 'Dashboard',
+    permissionKey: 'dashboard_main',
     links: [
-      { name: 'Management Review Dashboard', path: '/management', icon: TrendingUp },
-      { name: 'Advance Manpower Planning Dashboard', path: '/advanced', icon: Activity },
-      { name: 'Manpower Planning Dashboard', path: '/advance', icon: AlignEndHorizontal },
+      { name: 'Management Review Dashboard', path: '/management', icon: TrendingUp, permissionKey: 'dashboard_management' },
+      { name: 'Production Planning Dashboard', path: '/advanced', icon: Activity, permissionKey: 'dashboard_production' },
+      { name: 'Advanced Manpower Planning Dashboard', path: '/advance', icon: AlignEndHorizontal, permissionKey: 'dashboard_manpower' },
     ],
     icon: BarChart3,
     statusText: 'Live',
@@ -36,9 +38,10 @@ export const tiles = [
   },
   {
     title: 'Planning',
+    permissionKey: 'planning_main',
     links: [
       // { name: 'Planning', path: '/planning', icon: GitBranch },
-      { name: 'Plan', path: '/plan', icon: Target },
+      { name: 'Plan', path: '/plan', icon: Target, permissionKey: 'planning_plan' },
       // { name: 'Plan List', path: '/planlist', icon: ClipboardList },
     ],
     icon: Calendar,
@@ -49,9 +52,10 @@ export const tiles = [
   },
   // {
   //   title: 'Analytics',
+  //   permissionKey: 'analytics_main',
   //   links: [
-  //     { name: 'Analytics Graph', path: '#', icon: ChartNoAxesCombined },
-  //     { name: 'Analytics Table', path: '#', icon: FileChartColumn },
+  //     { name: 'Analytics Graph', path: '#', icon: ChartNoAxesCombined, permissionKey: 'analytics_graph' },
+  //     { name: 'Analytics Table', path: '#', icon: FileChartColumn, permissionKey: 'analytics_table' },
   //     //  { name: 'Analytics Graph', path: '/analytics', icon: ChartNoAxesCombined },
   //     // { name: 'Analytics Table', path: '/ProductionDataTable', icon: FileChartColumn },
   //   ],
@@ -63,9 +67,10 @@ export const tiles = [
   // },
   {
     title: 'Master Employee',
+    permissionKey: 'master_employee_main',
     links: [
-      { name: 'Master Table', path: '/MasterTable', icon: Database },
-      { name: 'Employee History Card', path: '/EmployeeHistorySearch', icon: Users },
+      { name: 'Master Table', path: '/MasterTable', icon: Database, permissionKey: 'master_employee_table' },
+      { name: 'Employee History Card', path: '/EmployeeHistorySearch', icon: Users, permissionKey: 'master_employee_history' },
     ],
     icon: Shield,
     statusText: 'Live',
@@ -75,9 +80,10 @@ export const tiles = [
   },
   {
     title: 'Process Dojo',
+    permissionKey: 'process_dojo_main',
     links: [
-      { name: 'Process Dojo', path: '/ProcessDojo', icon: GraduationCap },
-      { name: 'Quiz Results', path: '/results-explorer', icon: ClipboardPenLine  },
+      { name: 'Process Dojo', path: '/ProcessDojo', icon: GraduationCap, permissionKey: 'process_dojo_dojo' },
+      { name: 'Quiz Results', path: '/results-explorer', icon: ClipboardPenLine, permissionKey: 'process_dojo_quiz' },
     ],
     icon: Sword,
     statusText: 'Active',
@@ -87,8 +93,9 @@ export const tiles = [
   },
   {
     title: 'Skill Matrix',
+    permissionKey: 'skill_matrix_main',
     links: [
-      { name: 'Skill Matrix', path: '/skillmatrix', icon: Brain },
+      { name: 'Skill Matrix', path: '/skillmatrix', icon: Brain, permissionKey: 'skill_matrix_matrix' },
     ],
     icon: Grid,
     statusText: 'Beta',
@@ -98,9 +105,10 @@ export const tiles = [
   },
   {
     title: 'Retraining',
+    permissionKey: 'retraining_main',
     links: [
-      { name: 'poison cake', path: '/poison-cake', icon: ClipboardCheck },
-      { name: 'Retraining', path: '/retraining', icon: RotateCw },
+      { name: 'poison cake', path: '/poison-cake', icon: ClipboardCheck, permissionKey: 'retraining_poison_cake' },
+      { name: 'Retraining', path: '/retraining', icon: RotateCw, permissionKey: 'retraining_retraining' },
       // { name: 'OJT Sheet', path: '/', icon: Book },
     ],
     icon: FileText,
@@ -112,9 +120,10 @@ export const tiles = [
   },
   {
     title: 'Notifications',
+    permissionKey: 'notifications_main',
     links: [
-      { name: 'Notification', path: '/notification', icon: Bell },
-      { name: 'Approval List', path: '/approvallist', icon: CheckCircle },
+      { name: 'Notification', path: '/notification', icon: Bell, permissionKey: 'notifications_notification' },
+      { name: 'Approval List', path: '/approvallist', icon: CheckCircle, permissionKey: 'notifications_approval' },
     ],
     icon: Megaphone,
     statusText: 'Live',
@@ -124,9 +133,10 @@ export const tiles = [
   },
   {
     title: 'Schedules',
+    permissionKey: 'schedules_main',
     links: [
-      { name: 'Multiskill Schedule', path: '/scheduling', icon: Clock },
-      { name: 'Refresher Training Schedule', path: '/refreshment', icon: Calendar },
+      { name: 'Multiskill Schedule', path: '/scheduling', icon: Clock, permissionKey: 'schedules_multiskill' },
+      { name: 'Refresher Training Schedule', path: '/refreshment', icon: Calendar, permissionKey: 'schedules_refresher' },
     ],
     icon: Calendar,
     statusText: 'Updated',
@@ -136,8 +146,9 @@ export const tiles = [
   },
   {
     title: 'AR/VR',
+    permissionKey: 'ar_vr_main',
     links: [
-      { name: 'AR/VR', path: '/ArVrComponent', icon: Glasses },
+      { name: 'AR/VR', path: '/ArVrComponent', icon: Glasses, permissionKey: 'ar_vr_ar_vr' },
     ],
     icon: Video,
     statusText: 'New',
@@ -147,8 +158,9 @@ export const tiles = [
   },
   {
     title: 'Reports',
+    permissionKey: 'reports_main',
     links: [
-      { name: 'Report', path: '/report', icon: FileSearch },
+      { name: 'Report', path: '/report', icon: FileSearch, permissionKey: 'reports_report' },
     ],
     icon: FileBarChart2,
     statusText: 'Updated',
@@ -158,10 +170,11 @@ export const tiles = [
   },
   {
     title: 'Level Wise Curriculum',
+    permissionKey: 'level_wise_curriculum_main',
     links: [
-      { name: 'Level wise curriculum', path: '/dojoTraining', icon: Layers },
-      { name: 'Question Paper Settings', path: '/question-paper-setting', icon: FileText },
-      { name: 'Questions Settings', path: '/questions-upload', icon: Edit3 },
+      { name: 'Level wise curriculum', path: '/dojoTraining', icon: Layers, permissionKey: 'level_wise_curriculum_curriculum' },
+      { name: 'Question Paper Settings', path: '/question-paper-setting', icon: FileText, permissionKey: 'level_wise_curriculum_question_paper' },
+      { name: 'Questions Settings', path: '/questions-upload', icon: Edit3, permissionKey: 'level_wise_curriculum_questions' },
     ],
     icon: BookOpen,
     statusText: 'Active',
@@ -171,11 +184,12 @@ export const tiles = [
   },
   {
     title: 'Machine Allocation',
+    permissionKey: 'machine_allocation_main',
     links: [
-      { name: 'Machine Allocation', path: '/machine-allocations', icon: Server },
-      { name: 'Machines', path: '/machines', icon: Cpu },
-      { name: 'Allocation List', path: '/machineallocationslist', icon: FileSliders },
-      { name: 'Biometric System', path: '/biometrics', icon: List },
+      { name: 'Machine Allocation', path: '/machine-allocations', icon: Server, permissionKey: 'machine_allocation_allocation' },
+      { name: 'Machines', path: '/machines', icon: Cpu, permissionKey: 'machine_allocation_machines' },
+      { name: 'Allocation List', path: '/machineallocationslist', icon: FileSliders, permissionKey: 'machine_allocation_list' },
+      { name: 'Biometric System', path: '/biometrics', icon: List, permissionKey: 'machine_allocation_biometric' },
 
     ],
     icon: Network,
@@ -186,9 +200,12 @@ export const tiles = [
   },
   {
     title: 'Role Settings',
+    permissionKey: 'role_settings_main',
     links: [
       // { name: 'List', path: '', icon: List },
-      { name: 'Roles', path: '/Roles', icon: UserCog },
+      { name: 'Roles', path: '/Roles', icon: UserCog, permissionKey: 'role_settings_roles' },
+      { name: 'Role Permissions', path: '/RolePermissions', icon: ShieldCheck, permissionKey: 'roles_management' },
+
     ],
     icon: Settings,
     statusText: 'System',
@@ -198,8 +215,9 @@ export const tiles = [
   },
   {
     title: 'Exam Tool',
+    permissionKey: 'exam_tool_main',
     links: [
-      { name: 'Exam Tool Download', path: '#', icon: DownloadCloud },
+      { name: 'Exam Tool Download', path: '#', icon: DownloadCloud, permissionKey: 'exam_tool_download' },
     ],
     icon: Award,
     statusText: 'Updated',
@@ -209,9 +227,10 @@ export const tiles = [
   },
   {
     title: 'Method',
+    permissionKey: 'method_main',
     links: [
-      { name: 'Method', path: '/methodsettings', icon: FlaskRound },
-      { name: 'User Mannuals', path: '/ContentPage', icon: FileStack },
+      { name: 'Method', path: '/methodsettings', icon: FlaskRound, permissionKey: 'method_method' },
+      { name: 'User Mannuals', path: '/ContentPage', icon: FileStack, permissionKey: 'method_user_manuals' },
     ],
     icon: Microscope,
     statusText: 'Updated',

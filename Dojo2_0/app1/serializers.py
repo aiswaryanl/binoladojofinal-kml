@@ -63,6 +63,22 @@ class RoleSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'is_active', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']
 
+    def validate_name(self, value):
+        # Remove extra spaces and check case-insensitive existence
+        name = value.strip()
+        
+        # Check if we are updating an existing role or creating a new one
+        instance = getattr(self, 'instance', None)
+        
+        query = Role.objects.filter(name__iexact=name)
+        if instance:
+            query = query.exclude(pk=instance.pk)
+            
+        if query.exists():
+            raise serializers.ValidationError(f"A role with the name '{name}' already exists.")
+        
+        return name
+
 from rest_framework import serializers
 from .models import Role, User
 from rest_framework.exceptions import ValidationError
@@ -5615,3 +5631,47 @@ class AttritionRecordSerializer(serializers.ModelSerializer):
 
 
 
+
+# ------------------ Role Permission Startt -----------------------
+
+from .models import RolePermission,AppModule
+
+class RolePermissionSerializer(serializers.ModelSerializer):
+    module_key = serializers.ReadOnlyField(source='module.key')
+    
+    class Meta:
+        model = RolePermission
+        fields = ['module_key', 'is_allowed']
+
+class UserRolePermissionSerializer(serializers.ModelSerializer):
+    """
+    Used during login to return user info + their permissions.
+    """
+    permissions = serializers.SerializerMethodField()
+
+    # Ensure role_name matches your @property in the User model
+    role_name = serializers.ReadOnlyField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'first_name', 'last_name', 'role_name', 'permissions']
+
+    def get_permissions(self, obj):
+        # Use obj instead of user (obj is the current user instance)
+        if not obj.role:
+            return []
+        # Normalize to lowercase for comparison
+        role_name = obj.role.name.lower()
+        
+        # If Admin or Developer, return all possible keys
+        if role_name in ['admin', 'developer']:
+            return list(AppModule.objects.values_list('key', flat=True))
+        
+        # Otherwise, return only specifically assigned permissions
+        return list(RolePermission.filter(
+            role=obj.role,
+            is_allowed=True
+        ).values_list('module__key', flat=True))
+
+
+# ------------------- Role Permission End ---------------------------

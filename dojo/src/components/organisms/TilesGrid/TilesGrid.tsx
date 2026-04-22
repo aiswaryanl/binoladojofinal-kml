@@ -3,15 +3,31 @@ import type { LucideIcon } from 'lucide-react';
 import Tile from '../../atoms/Tile';
 import type { LinkType } from '../../atoms/Tile/types';
 
+// export interface TilesGridProps {
+//   tiles: Array<{
+//     title: string;
+//     links: LinkType[];
+//     icon: LucideIcon;
+//     iconBgColor?: string;
+//     iconColor?: string;
+//     borderTopColor?: string;
+//   }>;
+// }
+
+
+// Extend the interface to include the permissionKey
+export interface TileData {
+  title: string;
+  permissionKey: string; // Add this
+  links: (LinkType & { permissionKey: string })[]; // Add this
+  icon: LucideIcon;
+  iconBgColor?: string;
+  iconColor?: string;
+  borderTopColor?: string;
+}
+
 export interface TilesGridProps {
-  tiles: Array<{
-    title: string;
-    links: LinkType[];
-    icon: LucideIcon;
-    iconBgColor?: string;
-    iconColor?: string;
-    borderTopColor?: string;
-  }>;
+  tiles: TileData[];
 }
 
 const TilesGrid: React.FC<TilesGridProps> = ({ tiles }) => {
@@ -20,7 +36,8 @@ const TilesGrid: React.FC<TilesGridProps> = ({ tiles }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 w-full max-w-[1800px] mx-auto">
         {tiles.map((tile, index) => (
           <Tile
-            key={index}
+            // key={index}
+            key={`${tile.permissionKey}-${index}`} // Better key usage
             title={tile.title}
             links={tile.links}
             icon={tile.icon}

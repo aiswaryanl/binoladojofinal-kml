@@ -13,6 +13,7 @@ interface User {
   factory: string;
   department: string;
   status: boolean;
+  permissions: string[]; // <--- ADD THIS: Array of keys like ['dashboard_main', 'planning_main']
 }
 
 interface AuthState {
@@ -77,7 +78,22 @@ const authSlice = createSlice({
       state.loading = true;
     });
     builder.addCase(login.fulfilled, (state, action: PayloadAction<LoginResponse>) => {
-      state.user = action.payload.user;
+      // state.user = action.payload.user;
+            // 🔍 DEBUG: Log the entire response to see what the backend is sending
+      console.log("--- LOGIN SUCCESS DATA ---");
+      console.log("Full Payload:", action.payload);
+      console.log("User Object:", action.payload.user);
+      console.log("Permissions List:", action.payload.user.permissions);
+      console.log("--------------------------");
+      
+      
+      // state.user = action.payload.user;
+      // Use spread operator to ensure all fields (including permissions) are mapped
+      state.user = {
+        ...action.payload.user,
+        // If the backend occasionally sends null, default to an empty array
+        permissions: action.payload.user.permissions || [] 
+      };
       state.accessToken = action.payload.access_token;
       state.refreshToken = action.payload.refresh_token;
       state.isAuthenticated = true;

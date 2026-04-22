@@ -12,6 +12,7 @@ export interface LoginResponse {
     last_name: string;
     employeeid: string;
     role: string;
+    permissions: string[]; // <-- Add this line here too
     hq: string;
     factory: string;
     department: string;
