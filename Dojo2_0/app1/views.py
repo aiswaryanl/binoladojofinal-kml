@@ -16614,92 +16614,54 @@ class EmployeeCardDetailsView(APIView):
         rescheduled_sessions_data = []
 
         try:
-            query = Q()
-
-            first_name_clean = (employee.first_name or '').strip()
-            last_name_clean = (employee.last_name or '').strip()
             emp_id = getattr(employee, 'emp_id', None)
-
-            # Priority 1: Match by emp_id (most reliable)
-            if emp_id and str(emp_id).strip():
-                query |= Q(emp_id__iexact=str(emp_id).strip())
-
-            # Priority 2: Match by temp_id
             temp_id = getattr(employee, 'temp_id', None)
+            user_record = None
+
             if temp_id and str(temp_id).strip():
-                query |= Q(temp_id__iexact=str(temp_id).strip())
+                try:
+                    user_record = UserRegistration.objects.get(temp_id__iexact=str(temp_id).strip())
+                except UserRegistration.DoesNotExist:
+                    pass
+                except UserRegistration.MultipleObjectsReturned:
+                    print(f"⚠️ Multiple users found for temp_id: {temp_id}")
 
-            # Priority 3: STRICT exact first + last name (both must be present)
-            if first_name_clean and last_name_clean:
-                query |= (
-                    Q(first_name__iexact=first_name_clean) &
-                    Q(last_name__iexact=last_name_clean)
-                )
-            elif first_name_clean and ' ' in first_name_clean:
-                # Handle compound name stored entirely in first_name e.g. "Sneha Gautam"
-                name_parts = first_name_clean.split(None, 1)
-                query |= (
-                    Q(first_name__iexact=name_parts[0]) &
-                    Q(last_name__iexact=name_parts[1])
-                )
-            # ❌ REMOVED: icontains partial match — was causing false matches
+            if not user_record and emp_id and str(emp_id).strip():
+                try:
+                    user_record = UserRegistration.objects.get(emp_id__iexact=str(emp_id).strip())
+                except UserRegistration.DoesNotExist:
+                    pass
+                except UserRegistration.MultipleObjectsReturned:
+                    print(f"⚠️ Multiple users found for emp_id: {emp_id}")
 
-            if not query:
-                print(f"⚠️  No valid matching criteria for {emp_id}")
+            if user_record:
+                print(f"✅ Matched UserRegistration record for emp_id: {emp_id} | temp_id: {temp_id}")
+
+                # ── Attendance ─────────────────────────────────────────────
+                attendances = TrainingAttendance.objects.filter(
+                    user=user_record
+                ).select_related(
+                    'batch', 'user', 'day_number'
+                ).order_by(
+                    '-attendance_date', 'batch__batch_id', 'day_number'
+                )
+                attendances_data = CardTrainingAttendanceSerializer(attendances, many=True).data
+                print(f"✅ Found {len(attendances_data)} attendance record(s)")
+
+                # ── Rescheduled Sessions ───────────────────────────────────
+                rescheduled_sessions = RescheduledSession.objects.filter(
+                    employee=user_record
+                ).select_related(
+                    'employee', 'original_day', 'training_subtopic', 'batch'
+                ).order_by('-rescheduled_date', '-rescheduled_time')
+
+                rescheduled_sessions_data = CardRescheduledSessionSerializer(
+                    rescheduled_sessions, many=True
+                ).data
+                print(f"✅ Found {len(rescheduled_sessions_data)} rescheduled session(s)")
+
             else:
-                user_records = UserRegistration.objects.filter(query).distinct()[:5]
-
-                if user_records.exists():
-                    matched_users = [
-                    f"{' '.join(filter(None, [u.first_name, u.last_name]))} ({u.temp_id})"
-                    for u in user_records
-                ]
-                    # matched_users = [
-                    #     f"{u.first_name} {u.last_name or ''} ({u.temp_id})"
-                    #     for u in user_records
-                    # ]
-                    print(f"✅ Matched {user_records.count()} UserRegistration record(s) for "
-                          f"{emp_id} ({first_name_clean} {last_name_clean}): {matched_users}")
-
-                    # ── Deduplication ──────────────────────────────────────────
-                    # If multiple users matched AND we have an emp_id,
-                    # prefer only the ones whose emp_id matches exactly.
-                    # This prevents pulling attendance from a different person
-                    # who happens to share the same name.
-                    if user_records.count() > 1 and emp_id:
-                        emp_id_matched = user_records.filter(
-                            emp_id__iexact=str(emp_id).strip()
-                        )
-                        if emp_id_matched.exists():
-                            user_records = emp_id_matched
-                            print(f"🎯 Narrowed to {user_records.count()} record(s) via emp_id match")
-
-                    # ── Attendance ─────────────────────────────────────────────
-                    attendances = TrainingAttendance.objects.filter(
-                        user__in=user_records
-                    ).select_related(
-                        'batch', 'user', 'day_number'
-                    ).order_by(
-                        '-attendance_date', 'batch__batch_id', 'day_number'
-                    )
-                    attendances_data = CardTrainingAttendanceSerializer(attendances, many=True).data
-                    print(f"✅ Found {len(attendances_data)} attendance record(s)")
-
-                    # ── Rescheduled Sessions ───────────────────────────────────
-                    rescheduled_sessions = RescheduledSession.objects.filter(
-                        employee__in=user_records
-                    ).select_related(
-                        'employee', 'original_day', 'training_subtopic', 'batch'
-                    ).order_by('-rescheduled_date', '-rescheduled_time')
-
-                    rescheduled_sessions_data = CardRescheduledSessionSerializer(
-                        rescheduled_sessions, many=True
-                    ).data
-                    print(f"✅ Found {len(rescheduled_sessions_data)} rescheduled session(s)")
-
-                else:
-                    print(f"❌ No UserRegistration found for {emp_id} "
-                          f"({first_name_clean} {last_name_clean}) | temp_id: {temp_id}")
+                print(f"❌ No UserRegistration found for emp_id: {emp_id} | temp_id: {temp_id}")
 
         except Exception as e:
             print(f"❌ Attendance fetch error for {employee.emp_id}: {str(e)}")
