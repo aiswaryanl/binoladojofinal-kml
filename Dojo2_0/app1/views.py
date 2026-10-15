@@ -12204,13 +12204,28 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 # Make sure all your models and serializers are imported
-from .models import TrainingBatch, UserRegistration, TrainingAttendance, Days
+from .models import TrainingBatch, UserRegistration, TrainingAttendance, Days, MasterTable
 from .serializers import TrainingBatchSerializer, BatchAttendanceDetailSerializer, TrainingAttendanceSerializer
+from .signals import sync_name_to_registration
 
 # --- Active/Past Batch Views (Unchanged, but included for context) ---
 class ActiveTrainingBatchListView(generics.ListAPIView):
-    queryset = TrainingBatch.objects.filter(is_active=True)
+    queryset = TrainingBatch.objects.filter(
+        is_active=True,
+        batch_id__in=UserRegistration.objects.exclude(batch_id__isnull=True).values("batch_id"),
+    )
     serializer_class = TrainingBatchSerializer
+
+    def get_queryset(self):
+        # Align existing registrations with the authoritative Master Table join
+        # date before returning the batches available for attendance.
+        for employee in MasterTable.objects.filter(date_of_joining__isnull=False).iterator():
+            sync_name_to_registration(MasterTable, employee)
+
+        return TrainingBatch.objects.filter(
+            is_active=True,
+            batch_id__in=UserRegistration.objects.exclude(batch_id__isnull=True).values("batch_id"),
+        ).order_by("-created_at", "-batch_id")
 
 
 from django.utils import timezone # Make sure timezone is imported
@@ -12230,7 +12245,53 @@ class BatchAttendanceDetailView(APIView):
 
         users = UserRegistration.objects.filter(batch_id=batch_id)
         if not users.exists():
-            return Response({"error": "No users found for this batch."}, status=status.HTTP_404_NOT_FOUND)
+            # Repair registrations that already have a matching MasterTable
+            # employee, using the employee's authoritative joining date.
+            parts = batch_id.split("-")
+            if len(parts) >= 5 and parts[0] == "BATCH":
+                try:
+                    joining_date = datetime.datetime.strptime("-".join(parts[1:4]), "%d-%m-%Y").date()
+                except ValueError:
+                    joining_date = None
+
+                if joining_date:
+                    employees = MasterTable.objects.filter(
+                        date_of_joining=joining_date
+                    ).exclude(emp_id__isnull=True)
+                    for employee in employees:
+                        registration = UserRegistration.objects.filter(emp_id=employee.emp_id).first()
+                        if registration:
+                            UserRegistration.objects.filter(emp_id=employee.emp_id).update(batch_id=batch_id)
+                        else:
+                            UserRegistration.objects.create(
+                                emp_id=employee.emp_id,
+                                first_name=employee.first_name,
+                                last_name=employee.last_name or "",
+                                email=employee.email or None,
+                                phone_number=employee.phone or "",
+                                sex=employee.sex if employee.sex in {"M", "F", "O"} else "M",
+                                batch_id=batch_id,
+                                is_added_to_master=True,
+                            )
+                    users = UserRegistration.objects.filter(batch_id=batch_id)
+
+            if not users.exists():
+                return Response(
+                    {"error": "No Master Table employees or registrations have this batch's joining date."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+        # Multiple registration records can share one permanent employee ID.
+        # Keep the record with the most saved attendance so existing marks stay visible.
+        from django.db.models import Count
+        roster_by_employee = {}
+        ordered_users = users.annotate(
+            saved_attendance_count=Count("attendances")
+        ).order_by("-saved_attendance_count", "-is_added_to_master", "-created_at", "id")
+        for user in ordered_users:
+            employee_key = user.emp_id.strip().casefold() if user.emp_id and user.emp_id.strip() else f"temp:{user.temp_id}"
+            roster_by_employee.setdefault(employee_key, user)
+        users = list(roster_by_employee.values())
 
         data = {
             'batch_id': batch_id,
@@ -12260,7 +12321,10 @@ from .serializers import TrainingBatchSerializer, BatchAttendanceDetailSerialize
 
 
 class PastTrainingBatchListView(generics.ListAPIView):
-    queryset = TrainingBatch.objects.filter(is_active=False)
+    queryset = TrainingBatch.objects.filter(
+        is_active=False,
+        batch_id__in=UserRegistration.objects.exclude(batch_id__isnull=True).values("batch_id"),
+    ).order_by("-created_at", "-batch_id")
     serializer_class = TrainingBatchSerializer
 
 

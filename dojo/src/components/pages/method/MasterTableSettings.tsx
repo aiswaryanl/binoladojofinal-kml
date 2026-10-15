@@ -6363,7 +6363,7 @@ function LabeledInput({
       </label>
       <input
         type={type}
-        value={value}
+        value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder || `Enter ${label.toLowerCase()}`}
         disabled={disabled}
@@ -6398,7 +6398,7 @@ function LabeledSelect({
         {label}
       </label>
       <select
-        value={value}
+        value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
         className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-blue-500 ${
@@ -6611,7 +6611,9 @@ const MasterTableSettings: React.FC = () => {
     // });
     (["first_name", "last_name", "designation", "date_of_joining", "birth_date", "sex", "email", "phone"] as (keyof EmployeeData)[]).forEach((f) => {
   const v = formData[f];
-  payload[f] = v ? String(v).trim() : "";  // ✅ sends "" when cleared
+  payload[f] = f === "date_of_joining" || f === "birth_date"
+    ? (v ? String(v).trim() : null)
+    : (v ? String(v).trim() : "");
 });
     if (formData.department !== null) payload.department = formData.department;
     if (formData.sub_department !== null) payload.sub_department = formData.sub_department;
@@ -6702,9 +6704,17 @@ const MasterTableSettings: React.FC = () => {
   const handleEdit = (employee: EmployeeData) => {
     setFormData({
       ...employee,
+      first_name: employee.first_name ?? "",
+      last_name: employee.last_name ?? "",
       department: employee.department ?? null,
       sub_department: employee.sub_department ?? null,
       station: employee.station ?? null,
+      designation: employee.designation ?? "",
+      date_of_joining: employee.date_of_joining ?? "",
+      birth_date: employee.birth_date ?? "",
+      sex: employee.sex ?? "",
+      email: employee.email ?? "",
+      phone: employee.phone ?? "",
     });
     setIsEditing(true);
     setActiveTab("add-data");

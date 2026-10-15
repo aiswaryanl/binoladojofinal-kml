@@ -894,7 +894,7 @@ class UserRegistration(models.Model):
         if not self.temp_id:
             self.temp_id = f"TEMP{uuid.uuid4().hex[:12].upper()}"
 
-        if not self.pk:  # assign batch only for new user
+        if not self.pk and not self.batch_id:  # assign a default batch only when none was provided
             today = timezone.localdate()
             date_str = today.strftime("%d-%m-%Y")
 

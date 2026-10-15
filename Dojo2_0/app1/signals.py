@@ -2039,7 +2039,26 @@ def remove_biouser_global(sender, instance, **kwargs):
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from .models import UserRegistration, MasterTable
+from .models import UserRegistration, MasterTable, TrainingBatch
+
+
+def _training_batch_for_join_date(join_date):
+    date_str = join_date.strftime("%d-%m-%Y")
+    batch_prefix = f"BATCH-{date_str}-"
+    batch = TrainingBatch.objects.filter(batch_id__startswith=batch_prefix).order_by("batch_id").first()
+    if batch:
+        return batch
+
+    last_number = 0
+    for batch_id in TrainingBatch.objects.values_list("batch_id", flat=True):
+        try:
+            last_number = max(last_number, int(batch_id.rsplit("-", 1)[-1]))
+        except (TypeError, ValueError):
+            continue
+
+    batch_id = f"{batch_prefix}{last_number + 1}"
+    batch, _ = TrainingBatch.objects.get_or_create(batch_id=batch_id, defaults={"is_active": True})
+    return batch
 
 # ✅ Signal 1: UserRegistration → MasterTable
 @receiver(post_save, sender=UserRegistration)
@@ -2053,10 +2072,33 @@ def sync_name_to_master(sender, instance, **kwargs):
 # ✅ Signal 2: MasterTable → UserRegistration
 @receiver(post_save, sender=MasterTable)
 def sync_name_to_registration(sender, instance, **kwargs):
-    UserRegistration.objects.filter(
+    if not instance.emp_id:
+        return
+
+    registrations = UserRegistration.objects.filter(
         emp_id=instance.emp_id,
-        is_added_to_master=True
-    ).update(
-        first_name=instance.first_name,
-        last_name=instance.last_name
     )
+    updates = {
+        "first_name": instance.first_name,
+        "last_name": instance.last_name,
+    }
+    if instance.date_of_joining:
+        batch = _training_batch_for_join_date(instance.date_of_joining)
+        updates.update({
+            "batch_id": batch.batch_id,
+        })
+        if registrations.exists():
+            registrations.update(**updates)
+        else:
+            UserRegistration.objects.create(
+                emp_id=instance.emp_id,
+                first_name=instance.first_name,
+                last_name=instance.last_name or "",
+                email=instance.email or None,
+                phone_number=instance.phone or "",
+                sex=instance.sex if instance.sex in {"M", "F", "O"} else "M",
+                batch_id=batch.batch_id,
+                is_added_to_master=True,
+            )
+    else:
+        registrations.update(**updates)

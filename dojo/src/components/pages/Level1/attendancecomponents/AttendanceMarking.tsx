@@ -433,8 +433,19 @@ import {
 interface Batch { 
   batch_id: string; 
   start_date?: string; 
+  created_at?: string;
   is_active: boolean;
 }
+
+const sortBatchesNewestFirst = (items: Batch[]) => [...items].sort((a, b) => {
+  const createdAtDifference = new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+  if (createdAtDifference !== 0) return createdAtDifference;
+
+  // Older rows can share a date-only created_at value. Their trailing batch
+  // sequence provides a stable newest-first order for that day.
+  const sequenceOf = (batchId: string) => Number(batchId.match(/-(\d+)$/)?.[1] || 0);
+  return sequenceOf(b.batch_id) - sequenceOf(a.batch_id);
+});
 
 interface Employee { 
   id: number; 
@@ -532,7 +543,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
         const res = await fetch(endpoint);
         if (!res.ok) throw new Error(`Failed to fetch ${viewMode} batches`);
         const data: Batch[] = await res.json();
-        setBatches(data);
+        setBatches(sortBatchesNewestFirst(data));
         setSelectedBatch('');
         setCompletionStatus(null);
       } catch (err: any) {
@@ -758,7 +769,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
             const endpoint = viewMode === 'active'
               ? 'http://127.0.0.1:8000/training-batches/active/'
               : 'http://127.0.0.1:8000/training-batches/past/';
-            fetch(endpoint).then(res => res.json()).then(data => setBatches(data));
+            fetch(endpoint).then(res => res.json()).then((data: Batch[]) => setBatches(sortBatchesNewestFirst(data)));
           }, 2000);
         }
       }
@@ -801,7 +812,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
       const batchRes = await fetch(endpoint);
       if (batchRes.ok) {
         const batchData = await batchRes.json();
-        setBatches(batchData);
+        setBatches(sortBatchesNewestFirst(batchData));
       }
       
       setShowCompletionModal(false);
@@ -837,7 +848,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
       const batchRes = await fetch(endpoint);
       if (batchRes.ok) {
         const batchData = await batchRes.json();
-        setBatches(batchData);
+        setBatches(sortBatchesNewestFirst(batchData));
         setViewMode('active');
       }
       

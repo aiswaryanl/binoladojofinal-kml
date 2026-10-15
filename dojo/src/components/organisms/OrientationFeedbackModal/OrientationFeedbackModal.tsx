@@ -64,12 +64,19 @@ export const OrientationFeedbackModal: React.FC<OrientationFeedbackModalProps> =
       date_of_joining: orientationFields.date_of_joining,
       designation: orientationFields.designation || null,
       birth_date: orientationFields.birth_date || null,
-      aadhar_number: user.aadharNumber,
-      employment_type: user.employment_type,
-      has_experience: user.hasExperience,
-      experience_years: user.experienceYears,
-      company_of_experience: user.companyOfExperience,
-      user: user.id, // link to the temp user record
+    };
+
+    const readApiError = async (response: Response, fallback: string) => {
+      const errorData = await response.json().catch(() => ({}));
+      if (typeof errorData.detail === 'string') return errorData.detail;
+
+      const fieldErrors = Object.entries(errorData)
+        .map(([field, messages]) => {
+          const text = Array.isArray(messages) ? messages.join(', ') : String(messages);
+          return `${field}: ${text}`;
+        })
+        .filter(Boolean);
+      return fieldErrors.join('\n') || fallback;
     };
 
     try {
@@ -81,8 +88,7 @@ export const OrientationFeedbackModal: React.FC<OrientationFeedbackModalProps> =
       });
 
       if (!masterRes.ok) {
-        const err = await masterRes.json();
-        throw new Error(err.detail || 'Failed to save employee');
+        throw new Error(await readApiError(masterRes, 'Failed to save employee'));
       }
 
       // 2. Mark temp user as added (PATCH)
@@ -96,8 +102,7 @@ export const OrientationFeedbackModal: React.FC<OrientationFeedbackModalProps> =
       });
 
       if (!patchRes.ok) {
-        const err = await patchRes.json();
-        throw new Error(err.detail || 'Failed to mark user as added');
+        throw new Error(await readApiError(patchRes, 'Failed to mark user as added'));
       }
 
       toast.success('Employee added to master table!');
