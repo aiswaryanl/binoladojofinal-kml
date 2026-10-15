@@ -1747,7 +1747,8 @@ class TraineeInfoSerializer(serializers.ModelSerializer):
             'id', 'trainee_name', 'trainer_id', 'emp_id',
             'line', 'subline', 'station', 'station_name',
             'process_name', 'revision_date', 'doj', 'trainer_name', 'status',
-            'scores', 'scores_data', 'level', 'level_name'
+            'scores', 'scores_data', 'level', 'level_name',
+            'prepared_by', 'approved_by'
         ]
         # ✅ Disable automatic unique_together validation
         validators = []

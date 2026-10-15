@@ -213,7 +213,7 @@ const OJTForm: React.FC = () => {
         selectedStationId === null
       ) {
         setExistingOjtId(null);
-        setFormData(prev => ({ ...prev, dailyScores: {} }));
+        setFormData(prev => ({ ...prev, dailyScores: {}, signatures: { preparedBy: '', approvedBy: '', engineerJudge: '' } }));
         setLastFilledDayIndex(-1);
         return;
       }
@@ -239,7 +239,7 @@ const OJTForm: React.FC = () => {
 
         if (!record) {
           setExistingOjtId(null);
-          setFormData(prev => ({ ...prev, dailyScores: {} }));
+          setFormData(prev => ({ ...prev, dailyScores: {}, signatures: { preparedBy: '', approvedBy: '', engineerJudge: '' } }));
           setLastFilledDayIndex(-1);
           return;
         }
@@ -279,13 +279,18 @@ const OJTForm: React.FC = () => {
             doi: record.doj,
             trainerName: record.trainer_name || '',
           },
+          signatures: {
+            preparedBy: record.prepared_by || '',
+            approvedBy: record.approved_by || '',
+            engineerJudge: prev.signatures.engineerJudge,
+          },
           dailyScores: prefilled,
         }));
       } catch (error) {
         console.error('[FETCH OJT] Error:', error);
         toast.error('Failed to load OJT data');
         setExistingOjtId(null);
-        setFormData(prev => ({ ...prev, dailyScores: {} }));
+        setFormData(prev => ({ ...prev, dailyScores: {}, signatures: { preparedBy: '', approvedBy: '', engineerJudge: '' } }));
         setLastFilledDayIndex(-1);
       }
     };
@@ -388,6 +393,8 @@ const OJTForm: React.FC = () => {
         doj: formData.traineeInfo.doi,
         trainer_name: formData.traineeInfo.trainerName,
         level: currentLevelId,
+        prepared_by: formData.signatures.preparedBy.trim(),
+        approved_by: formData.signatures.approvedBy.trim(),
         scores: scoresArray,
       };
     }

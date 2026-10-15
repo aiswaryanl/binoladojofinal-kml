@@ -1897,6 +1897,8 @@ class TraineeInfo(models.Model):
     trainer_name = models.CharField(max_length=100)
     status = models.CharField(max_length=50, default="Pending")
     level = models.ForeignKey('Level', on_delete=models.CASCADE, related_name='trainees')
+    prepared_by = models.CharField(max_length=100, null=True, blank=True)
+    approved_by = models.CharField(max_length=100, null=True, blank=True)
 
     def __str__(self):
         return f"{self.trainee_name} ({self.emp_id}) - Level {self.level.pk}"

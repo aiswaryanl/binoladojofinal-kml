@@ -79,7 +79,7 @@ const TraineeInfoForm: React.FC<TraineeInfoFormProps> = ({
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">Process Name</label>
+          <label className="block text-sm font-semibold text-gray-700">Process Name <span className="text-red-500">*</span></label>
           <input
             type="text"
             value={formData.traineeInfo.processName}
@@ -110,7 +110,7 @@ const TraineeInfoForm: React.FC<TraineeInfoFormProps> = ({
         </div>
 
         <div className="space-y-2">
-          <label className="block text-sm font-semibold text-gray-700">Trainer Name</label>
+          <label className="block text-sm font-semibold text-gray-700">Trainer Name <span className="text-red-500">*</span></label>
           <input
             type="text"
             value={formData.traineeInfo.trainerName}
