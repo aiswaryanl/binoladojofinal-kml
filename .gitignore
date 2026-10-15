@@ -1,59 +1,37 @@
-# === Python / Django ===
-env/
-__pycache__/
+# Python virtual environments and installed packages
+**/venv/
+**/.venv/
+**/env/
+**/ENV/
+**/site-packages/
 **/__pycache__/
-*.py[cod]
-*.log
-*.pot
-*.pyc
-*.pyo
-*.pyd
-*.sqlite3
-*.db
-*.env
-.env
-.env.*
+**/Lib/
+**/Scripts/
+**/Include/
 
-# Django specific
+# Python build and distribution
+build/
+dist/
+wheels/
 *.egg-info/
-*.bak
-db.sqlite3
-media/
-staticfiles/
-local_settings.py
 
-# === React / Vite / Node (Frontend) ===
-dojo/node_modules/
-dojo/dist/
-dojo/.env
-dojo/.env.*
-dojo/.vite/
-dojo/.cache/
-dojo/.DS_Store
-dojo/npm-debug.log*
-dojo/yarn-debug.log*
-dojo/yarn-error.log*
-
-# === System / Editor Files ===
+# IDE and temporary files
 .vscode/
 .idea/
-*.swp
-*.swo
+*.code-workspace
 *.tmp
-*.bak
-.DS_Store
-Thumbs.db
 
-# === Test / Coverage ===
-.pytest_cache/
-coverage/
-htmlcov/
-*.cover
-*.coverage
-coverage.xml
-nosetests.xml
-test-results.xml
+# Environment secrets
+.env
+.env.*
+!.env.example
 
-# === Build / Misc ===
-build/
-*.log
+# Django generated files
+**/migrations/__pycache__/
+staticfiles/
+media/
+*.sqlite3
+
+# Node dependencies
+**/node_modules/
+**/.vite/
