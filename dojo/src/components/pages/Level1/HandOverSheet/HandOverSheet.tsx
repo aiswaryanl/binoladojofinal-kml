@@ -3324,11 +3324,11 @@ const HandOverFormModal: React.FC<HandOverFormModalProps> = ({
               ))}
 
               <div style={s.field}>
-                <label style={s.label}>Industrial Experience / Dept</label>
+                <label style={s.label}>Industrial Experience / Dept <span aria-hidden="true" style={{ color: "#dc2626", marginLeft: 4 }}>*</span></label>
                 <input type="text" name="industrialExperience" value={formData.industrialExperience} onChange={handleChange} style={s.input} placeholder="e.g. 3 years / Welding" required />
               </div>
               <div style={s.field}>
-                <label style={s.label}>KPAPL Experience / Dept</label>
+                <label style={s.label}>KPAPL Experience / Dept <span aria-hidden="true" style={{ color: "#dc2626", marginLeft: 4 }}>*</span></label>
                 <input type="text" name="kpaplExperience" value={formData.kpaplExperience} onChange={handleChange} style={s.input} placeholder="e.g. 1 year / Assembly" required />
               </div>
               <div style={s.field}>
@@ -3361,19 +3361,19 @@ const HandOverFormModal: React.FC<HandOverFormModalProps> = ({
                 <input type="date" name="handoverDate" value={formData.handoverDate} onChange={handleChange} style={s.input} required />
               </div>
               <div style={s.field}>
-                <label style={s.label}>Contractor Name</label>
+                <label style={s.label}>Contractor Name <span aria-hidden="true" style={{ color: "#dc2626", marginLeft: 4 }}>*</span></label>
                 <input type="text" name="contractorName" value={formData.contractorName} onChange={handleChange} style={s.input} placeholder="Enter contractor name" required />
               </div>
               <div style={s.field}>
-                <label style={s.label}>P & A Name</label>
+                <label style={s.label}>P & A Name <span aria-hidden="true" style={{ color: "#dc2626", marginLeft: 4 }}>*</span></label>
                 <input type="text" name="pAndAName" value={formData.pAndAName} onChange={handleChange} style={s.input} placeholder="Enter P & A name" required />
               </div>
               <div style={s.field}>
-                <label style={s.label}>QA HOD Name</label>
+                <label style={s.label}>QA HOD Name <span aria-hidden="true" style={{ color: "#dc2626", marginLeft: 4 }}>*</span></label>
                 <input type="text" name="qaHodName" value={formData.qaHodName} onChange={handleChange} style={s.input} placeholder="Enter QA HOD name" required />
               </div>
               <div style={s.field}>
-                <label style={s.label}>Is Training Completed?</label>
+                <label style={s.label}>Is Training Completed? <span aria-hidden="true" style={{ color: "#dc2626", marginLeft: 4 }}>*</span></label>
                 <select name="isTrainingCompleted" value={formData.isTrainingCompleted} onChange={handleChange} style={s.input as React.CSSProperties} required>
                   <option value="" disabled>Select an option</option>
                   <option value="yes">Yes</option>
@@ -3381,7 +3381,7 @@ const HandOverFormModal: React.FC<HandOverFormModalProps> = ({
                 </select>
               </div>
               <div style={s.field}>
-                <label style={s.label}>Dojo Incharge Name</label>
+                <label style={s.label}>Dojo Incharge Name <span aria-hidden="true" style={{ color: "#dc2626", marginLeft: 4 }}>*</span></label>
                 <input type="text" name="gojoInchargeName" value={formData.gojoInchargeName} onChange={handleChange} style={s.input} placeholder="Enter Dojo incharge name" required />
               </div>
 

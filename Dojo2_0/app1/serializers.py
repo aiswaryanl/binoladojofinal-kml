@@ -2906,8 +2906,10 @@ class HandoverSheetCreateSerializer(serializers.ModelSerializer):
         line_name = validated_data.pop("distributed_line_name", "").strip()
         station_name = validated_data.pop("distributed_station_name", "").strip()
         
-        is_training_completed = validated_data.pop("is_training_completed")
-        training_completed_bool = str(is_training_completed).lower() == "yes"
+        # ModelSerializer's BooleanField has already normalized inputs such as
+        # "yes"/"no" and true/false to Python booleans. Comparing str(True)
+        # with "yes" incorrectly saved completed training as False.
+        training_completed_bool = validated_data.pop("is_training_completed")
 
         # 2. Fetch Employee and Department (Use iexact for safety)
         employee = MasterTable.objects.get(emp_id=emp_id)
