@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import ProductivityEvaluation,Schedule,TrainingAttendance,RescheduledSession,AdvanceManpowerDashboard, EvaluationCriterion, HandoverSheet, HierarchyStructure, Hq, Factory, Department, HumanBodyQuestions, Line, ManagementReview, MasterTable, OJTDay, OJTLevel2Quantity, OJTPassingCriteria, OJTScoreRange, RetrainingSession, StationManager, SubLine, Station, User, UserRegistration
+from .models import ProductivityEvaluation,Schedule,TrainingAttendance,RescheduledSession,AdvanceManpowerDashboard, EvaluationCriterion, HandoverSheet, HierarchyStructure, Hq, Factory, Department, HumanBodyQuestions, Line, ManagementReview, MasterTable, OJTDay, OJTLevel2Quantity, OJTPassingCriteria, OJTScoreRange, RetrainingSession, StationManager, SubLine, Station, TrainingBatch, User, UserRegistration
 
 class StationInline(admin.TabularInline):
     model = Station
@@ -181,6 +181,15 @@ class MasterTableAdmin(admin.ModelAdmin):
     def row_number(self, obj):
         return list(MasterTable.objects.order_by("emp_id")).index(obj) + 1
     row_number.short_description = "DB ID"
+
+
+@admin.register(TrainingBatch)
+class TrainingBatchAdmin(admin.ModelAdmin):
+    list_display = ("batch_id", "is_active", "created_at")
+    list_filter = ("is_active", "created_at")
+    search_fields = ("batch_id",)
+    readonly_fields = ("created_at",)
+    ordering = ("-created_at", "batch_id")
 
 
 
