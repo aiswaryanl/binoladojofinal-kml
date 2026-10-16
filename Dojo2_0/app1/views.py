@@ -10537,8 +10537,8 @@ class DailyProductionDataViewSet(viewsets.ModelViewSet):
             calculated_totals['grand_total_actual'] = calculated_totals['ctq_actual_total'] + calculated_totals['pdi_actual_total'] + calculated_totals['other_actual_total']
 
             # Step 2: Perform the overlap check
-            start_date = datetime.strptime(data['start_date'], '%Y-%m-%d').date()
-            end_date = datetime.strptime(data['end_date'], '%Y-%m-%d').date()
+            start_date = datetime.datetime.strptime(data['start_date'], '%Y-%m-%d').date()
+            end_date = datetime.datetime.strptime(data['end_date'], '%Y-%m-%d').date()
             entry_mode = data['entry_mode']
             
             overlap_condition = Q(start_date__lte=end_date) & Q(end_date__gte=start_date)
@@ -10674,8 +10674,8 @@ class DailyProductionDataViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Required parameters missing'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
         except ValueError:
             return Response({'error': 'Invalid date format'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -10763,8 +10763,8 @@ class DailyProductionDataViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Factory, start_date, and end_date are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
         except ValueError:
             return Response({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -10813,7 +10813,7 @@ class DailyProductionDataViewSet(viewsets.ModelViewSet):
                 return Response({'error': 'Factory and target_date are required.'}, status=status.HTTP_400_BAD_REQUEST)
             
             try:
-                target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+                target_date = datetime.datetime.strptime(target_date_str, '%Y-%m-%d').date()
             except ValueError:
                 return Response({'error': 'Invalid date format.'}, status=status.HTTP_400_BAD_REQUEST)
                 
@@ -10856,7 +10856,7 @@ class DailyProductionDataViewSet(viewsets.ModelViewSet):
         target_date_str = request.query_params.get('target_date')
         
         try:
-            target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+            target_date = datetime.datetime.strptime(target_date_str, '%Y-%m-%d').date()
             month = target_date.month
             year = target_date.year
         except:
@@ -10908,8 +10908,8 @@ class DailyProductionDataViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-            end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
         except ValueError:
             return Response(
                 {'error': 'Invalid date format. Use YYYY-MM-DD.'},
@@ -11061,7 +11061,7 @@ class DailyProductionDataViewSet(viewsets.ModelViewSet):
 
         # --- 2. Calculate date range and build filters ---
         try:
-            start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
+            start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
             end_date = start_date + timedelta(days=6)
 
             filters = {
@@ -11216,7 +11216,7 @@ class DailyProductionDataViewSet(viewsets.ModelViewSet):
         if not all([factory_id, target_date_str]):
             return Response({'error': 'Factory and start_date are required.'}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+            target_date = datetime.datetime.strptime(target_date_str, '%Y-%m-%d').date()
         except ValueError:
             return Response({'error': 'Invalid date format.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -11315,7 +11315,7 @@ class DailyProductionDataViewSet(viewsets.ModelViewSet):
         if not all([factory_id, target_date_str]):
             return Response({'error': 'Factory and start_date are required.'}, status=status.HTTP_400_BAD_REQUEST)
         try:
-            target_date = datetime.strptime(target_date_str, '%Y-%m-%d').date()
+            target_date = datetime.datetime.strptime(target_date_str, '%Y-%m-%d').date()
         except ValueError:
             return Response({'error': 'Invalid date format.'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -11364,8 +11364,8 @@ def get_planning_data(request):
         return JsonResponse({'success': False, 'error': 'Factory, start_date, end_date, and group_by are required.'}, status=400)
 
     try:
-        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
-        end_date = datetime.strptime(end_date_str, '%Y-%m-%d').date()
+        start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d').date()
+        end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d').date()
     except ValueError:
         return JsonResponse({'success': False, 'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
 
@@ -20601,7 +20601,7 @@ def schedule_task(task_name, task_path, time_str):
   
 
     try:
-        dt = datetime.strptime(time_str.strip(), "%I:%M %p")
+        dt = datetime.datetime.strptime(time_str.strip(), "%I:%M %p")
         hour, minute = dt.hour, dt.minute
     except ValueError:
         return None, "Invalid time format. Use HH:MM AM/PM."
