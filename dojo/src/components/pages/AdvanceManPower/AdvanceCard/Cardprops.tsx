@@ -281,7 +281,7 @@ interface CardData {
   operators_required: number;
   operators_available: number;
   buffer_manpower_required: number;
-  buffer_manpower_available: number; // Ignored — we calculate dynamically
+  buffer_manpower_available: number;
 }
 
 interface Subtopic {
@@ -299,16 +299,8 @@ interface Props {
 
 const CardProps: React.FC<Props> = ({ data, loading, error, subtopics, cardColors }) => {
 
-  // Helper: Get display value for Buffer Manpower Available
   const getDisplayValue = (dataKey: keyof CardData): string | number => {
     if (!data) return "N/A";
-
-    if (dataKey === "buffer_manpower_available") {
-      const surplus = data.operators_available - data.operators_required;
-      return surplus > 0 ? surplus : "0";  // Show "0" if shortfall or exact match
-      // Alternative: return surplus > 0 ? surplus : "Shortage";
-    }
-
     return data[dataKey] ?? "N/A";
   };
 

@@ -21804,51 +21804,10 @@ def get_hierarchy_filters(request):
 # ==============================================================================
 def bifurcation_stats_view(request):
     now = timezone.now()
-    today_date = now.date()
     current_month = now.month
     current_year = now.year
 
-    skill_filters, dashboard_filters = get_hierarchy_filters(request)
-
-    # ------------------------------------------------------------------
-    # SECTION A: AVAILABLE  (today's biometric → SkillMatrix)
-    # card_no in BiometricAttendance matches emp_id in MasterTable
-    # ------------------------------------------------------------------
-
-    # Step 1: Get present employee card_nos as a SUBQUERY (stays in SQL)
-    present_cards = BiometricAttendance.objects.filter(
-        attendance_date=today_date
-    ).values('card_no')  # kept as subquery, NOT .values_list(..., flat=True)
-
-    # Step 2: Filter SkillMatrix where employee's emp_id is in present cards
-    available_qs = SkillMatrix.objects.filter(
-        employee__emp_id__in=present_cards,
-        **skill_filters
-    )
-
-    # Step 3: ONE query — group by level_name, count distinct employees
-    level_counts_qs = (
-        available_qs
-        .values('level__level_name')
-        .annotate(total=Count('employee_id', distinct=True))
-    )
-
-    # Step 4: Build a dict  { 'Level 1': 5, 'Level 2': 3, ... }
-    level_count_map = {}
-    for row in level_counts_qs:
-        level_count_map[row['level__level_name']] = row['total']
-
-    # Step 5: Match level names flexibly (handles "Level 1", "L1", "1" etc.)
-    def get_level_count(n):
-        for key, val in level_count_map.items():
-            if str(n) in str(key):
-                return val
-        return 0
-
-    l1_available = get_level_count(1)
-    l2_available = get_level_count(2)
-    l3_available = get_level_count(3)
-    l4_available = get_level_count(4)
+    _, dashboard_filters = get_hierarchy_filters(request)
 
     # ------------------------------------------------------------------
     # SECTION B: REQUIRED  (AdvanceManpowerDashboard — same as before)
@@ -21861,13 +21820,17 @@ def bifurcation_stats_view(request):
 
     unique_records = {}
     for row in dashboard_qs:
-        key = (row.station_id, row.subline_id, row.line_id, row.department_id)
+        key = (row.station_id, row.subline_id, row.line_id, row.department_id, row.factory_id)
         unique_records[key] = row
 
     l1_required = sum(r.l1_required or 0 for r in unique_records.values())
     l2_required = sum(r.l2_required or 0 for r in unique_records.values())
     l3_required = sum(r.l3_required or 0 for r in unique_records.values())
     l4_required = sum(r.l4_required or 0 for r in unique_records.values())
+    l1_available = sum(r.l1_available or 0 for r in unique_records.values())
+    l2_available = sum(r.l2_available or 0 for r in unique_records.values())
+    l3_available = sum(r.l3_available or 0 for r in unique_records.values())
+    l4_available = sum(r.l4_available or 0 for r in unique_records.values())
 
     return JsonResponse({
         "l1_required": l1_required, "l1_available": l1_available,
@@ -21884,40 +21847,10 @@ def bifurcation_stats_view(request):
 # ==============================================================================
 def current_manpower_card_view(request):
     now = timezone.now()
-    today_date = now.date()
     current_month = now.month
     current_year = now.year
 
-    skill_filters, dashboard_filters = get_hierarchy_filters(request)
-
-    # PART A: AVAILABLE
-    present_cards = BiometricAttendance.objects.filter(
-        attendance_date=today_date
-    ).values('card_no')
-
-    available_qs = SkillMatrix.objects.filter(
-        employee__emp_id__in=present_cards,
-        **skill_filters
-    )
-
-    level_counts_qs = (
-        available_qs
-        .values('level__level_name')
-        .annotate(total=Count('employee_id', distinct=True))
-    )
-
-    level_count_map = {row['level__level_name']: row['total'] for row in level_counts_qs}
-
-    def get_level_count(n):
-        for key, val in level_count_map.items():
-            if str(n) in str(key):
-                return val
-        return 0
-
-    operators_available_total = (
-        get_level_count(1) + get_level_count(2) +
-        get_level_count(3) + get_level_count(4)
-    )
+    _, dashboard_filters = get_hierarchy_filters(request)
 
     # PART B: REQUIRED
     dashboard_qs = AdvanceManpowerDashboard.objects.filter(
@@ -21935,11 +21868,13 @@ def current_manpower_card_view(request):
     buffer_manpower_required = 0
     buffer_manpower_available = 0
     operators_required_total = 0
+    operators_available_total = 0
 
     for row in unique_records.values():
         total_stations            += (row.total_stations or 0)
         buffer_manpower_required  += (row.buffer_manpower_required or 0)
         buffer_manpower_available += (row.buffer_manpower_available or 0)
+        operators_available_total += (row.operators_available or 0)
         operators_required_total  += (
             (row.l1_required or 0) + (row.l2_required or 0) +
             (row.l3_required or 0) + (row.l4_required or 0)
@@ -21983,48 +21918,9 @@ def total_manpower_stats_view(request):
         target_fy_start = now.year - 1 if now.month <= 3 else now.year
 
     fy_end = target_fy_start + 1
-    skill_filters, dashboard_filters = get_hierarchy_filters(request)
+    _, dashboard_filters = get_hierarchy_filters(request)
 
-    # KEY FIX: use __gte/__lte on real date objects
-    # SQLite indexes DateField directly — no EXTRACT, no full table scan
-    date_from, date_to = get_fy_date_range(target_fy_start)
-
-    # ------------------------------------------------------------------
-    # QUERY 1: All present (card_no, attendance_date) in FY — one query
-    # Filter by date range directly, exclude absent statuses
-    # Then extract month/year in Python (cheaper than doing it in SQLite)
-    # ------------------------------------------------------------------
-    present_rows = (
-        BiometricAttendance.objects
-        .filter(
-            attendance_date__gte=date_from,
-            attendance_date__lte=date_to,
-        )
-        .exclude(status__in=['A', 'Absent', 'Leave', 'WO', 'HD'])
-        .values('card_no', 'attendance_date')   # only fetch 2 columns
-        .distinct()
-    )
-
-    # Build { (month, year): set(card_nos) } in Python — fast
-    monthly_cards = defaultdict(set)
-    for row in present_rows:
-        d = row['attendance_date']
-        monthly_cards[(d.month, d.year)].add(row['card_no'])
-
-    # ------------------------------------------------------------------
-    # QUERY 2: All skill-matrix emp_ids passing hierarchy filters
-    # ------------------------------------------------------------------
-    skill_emp_ids = set(
-        SkillMatrix.objects
-        .filter(**skill_filters)
-        .values_list('employee__emp_id', flat=True)
-        .distinct()
-    )
-
-    # ------------------------------------------------------------------
-    # QUERY 3: Required from dashboard — single aggregation
-    # ------------------------------------------------------------------
-    req_qs = (
+    monthly_qs = (
         AdvanceManpowerDashboard.objects
         .filter(
             Q(year=target_fy_start, month__gte=4) |
@@ -22032,22 +21928,28 @@ def total_manpower_stats_view(request):
             **dashboard_filters
         )
         .values('month', 'year')
-        .annotate(total_required=Sum('operators_required'))
+        .annotate(
+            total_required=Sum('operators_required'),
+            total_available=Sum('operators_available'),
+            attrition_rate=Avg('attrition_rate'),
+            oet_attrition=Avg('oet_attrition'),
+            associate_attrition=Avg('associate_attrition'),
+        )
     )
-    req_map = {
-        (row['month'], row['year']): (row['total_required'] or 0)
-        for row in req_qs
+    monthly_map = {
+        (row['month'], row['year']): row
+        for row in monthly_qs
     }
 
     # ------------------------------------------------------------------
-    # Assemble — pure Python, zero extra DB calls
+    # Return saved monthly required and available values from the dashboard records.
     # ------------------------------------------------------------------
     monthly_data = []
     for month in range(1, 13):
         year = target_fy_start if month >= 4 else fy_end
-        present_this_month = monthly_cards.get((month, year), set())
-        available = len(present_this_month & skill_emp_ids)
-        required  = req_map.get((month, year), 0)
+        month_data = monthly_map.get((month, year), {})
+        required = month_data.get('total_required', 0) or 0
+        available = month_data.get('total_available', 0) or 0
         monthly_data.append({
             "month": month,
             "year": year,
@@ -22133,42 +22035,9 @@ class BufferManpowerChartView(APIView):
             target_fy_start = now.year - 1 if now.month <= 3 else now.year
 
         fy_end = target_fy_start + 1
-        skill_filters, dashboard_filters = get_hierarchy_filters(request)
+        _, dashboard_filters = get_hierarchy_filters(request)
 
-        date_from, date_to = get_fy_date_range(target_fy_start)
-
-        # ------------------------------------------------------------------
-        # QUERY 1: Present rows — date range filter (SQLite-friendly)
-        # ------------------------------------------------------------------
-        present_rows = (
-            BiometricAttendance.objects
-            .filter(
-                attendance_date__gte=date_from,
-                attendance_date__lte=date_to,
-            )
-            .exclude(status__in=['A', 'Absent', 'Leave', 'WO', 'HD'])
-            .values('card_no', 'attendance_date')
-            .distinct()
-        )
-
-        monthly_cards = defaultdict(set)
-        for row in present_rows:
-            d = row['attendance_date']
-            monthly_cards[(d.month, d.year)].add(row['card_no'])
-
-        # ------------------------------------------------------------------
-        # QUERY 2: Skill-matrix emp_ids
-        # ------------------------------------------------------------------
-        skill_emp_ids = set(
-            SkillMatrix.objects
-            .filter(**skill_filters)
-            .values_list('employee__emp_id', flat=True)
-            .distinct()
-        )
-
-        # ------------------------------------------------------------------
-        # QUERY 3: Dashboard buffer data
-        # ------------------------------------------------------------------
+        # Load monthly planned and available buffer values from dashboard records.
         dashboard_qs = (
             AdvanceManpowerDashboard.objects
             .filter(
@@ -22178,8 +22047,8 @@ class BufferManpowerChartView(APIView):
             )
             .values('month', 'year')
             .annotate(
-                total_required=Sum('operators_required'),
                 buffer_req=Sum('buffer_manpower_required'),
+                buffer_available=Sum('buffer_manpower_available'),
             )
         )
         dashboard_map = {
@@ -22194,18 +22063,15 @@ class BufferManpowerChartView(APIView):
 
         for month in months_sequence:
             year = target_fy_start if month >= 4 else fy_end
-            present_this_month = monthly_cards.get((month, year), set())
-            total_available    = len(present_this_month & skill_emp_ids)
             dash               = dashboard_map.get((month, year), {})
-            total_required     = dash.get('total_required', 0) or 0
             buffer_req         = dash.get('buffer_req', 0) or 0
-            gap                = max(0, total_required - total_available)
+            buffer_available  = dash.get('buffer_available', 0) or 0
 
             monthly_data.append({
                 "month": month,
                 "year": year,
                 "buffer_manpower_required": buffer_req,
-                "buffer_manpower_available": gap,
+                "buffer_manpower_available": buffer_available,
             })
 
         return Response(monthly_data, status=status.HTTP_200_OK)

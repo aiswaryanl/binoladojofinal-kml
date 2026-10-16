@@ -2669,7 +2669,7 @@ const apiToFrontend = (apiData: ApiAdvanceManpowerData): AdvanceSettingsData => 
   month_year: `${apiData.year}-${String(apiData.month).padStart(2, '0')}`,
   total_stations_ctq: apiData.total_stations,
   operator_required_ctq: apiData.operators_required,
-  operator_availability_ctq: apiData.operators_available,
+  operator_availability_ctq: (apiData.l1_available || 0) + (apiData.l2_available || 0) + (apiData.l3_available || 0) + (apiData.l4_available || 0),
   buffer_manpower_required_ctq: apiData.buffer_manpower_required,
   buffer_manpower_availability_ctq: apiData.buffer_manpower_available,
   l1_required: apiData.l1_required,
@@ -2699,7 +2699,7 @@ const frontendToApi = (formData: AdvanceSettingsData) => {
     month: parseInt(monthStr),
     total_stations: formData.total_stations_ctq,
     operators_required: formData.operator_required_ctq,
-    operators_available: formData.operator_availability_ctq,
+    operators_available: formData.l1_available + formData.l2_available + formData.l3_available + formData.l4_available,
     buffer_manpower_required: formData.buffer_manpower_required_ctq,
     buffer_manpower_available: formData.buffer_manpower_availability_ctq,
     l1_required: formData.l1_required,
@@ -3248,6 +3248,8 @@ const overall =
 const AdvanceSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [advanceSettingsData, setAdvanceSettingsData] = useState<AdvanceSettingsData[]>([]);
+  const [selectedRecordIds, setSelectedRecordIds] = useState<number[]>([]);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [fullHierarchy, setFullHierarchy] = useState<HierarchyStructure[]>([]);
   const [hqOptions, setHqOptions] = useState<DropdownOption[]>([]);
@@ -3417,6 +3419,19 @@ const AdvanceSettings: React.FC = () => {
     });
   };
 
+  const handleAvailableChange = (level: "l1" | "l2" | "l3" | "l4", value: string) => {
+    const num = Number(value) || 0;
+    setFormData(prev => {
+      const next = { ...prev, [`${level}_available`]: num };
+      next.operator_availability_ctq =
+        (next.l1_available || 0) +
+        (next.l2_available || 0) +
+        (next.l3_available || 0) +
+        (next.l4_available || 0);
+      return next;
+    });
+  };
+
   const handleEdit = (item: AdvanceSettingsData) => {
     setFormData(item);
     if (item.hq) handleHqChange(item.hq);
@@ -3470,8 +3485,35 @@ const AdvanceSettings: React.FC = () => {
       const res = await fetch(`${API_BASE_URL}/advance-dashboard/${id}/`, { method: "DELETE" });
       if (!res.ok) throw new Error("Delete failed");
       setAdvanceSettingsData(prev => prev.filter(item => item.id !== id));
+      setSelectedRecordIds(prev => prev.filter(selectedId => selectedId !== id));
     } catch (err: any) {
       alert(`Delete error: ${err.message}`);
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    const ids = selectedRecordIds;
+    if (!ids.length || bulkDeleting) return;
+    if (!window.confirm(`Delete all ${ids.length} selected record${ids.length === 1 ? "" : "s"}? This action cannot be undone.`)) return;
+
+    setBulkDeleting(true);
+    try {
+      const results = await Promise.allSettled(ids.map(id =>
+        fetch(`${API_BASE_URL}/advance-dashboard/${id}/`, { method: "DELETE" }).then(res => {
+          if (!res.ok) throw new Error(`Delete failed for record ${id}`);
+          return id;
+        })
+      ));
+      const deletedIds = results.flatMap(result => result.status === "fulfilled" ? [result.value] : []);
+      const failedCount = ids.length - deletedIds.length;
+      setAdvanceSettingsData(current => current.filter(item => !deletedIds.includes(item.id ?? -1)));
+      setSelectedRecordIds(current => current.filter(id => !deletedIds.includes(id)));
+      if (failedCount) alert(`${deletedIds.length} deleted; ${failedCount} failed. Select the remaining records and retry.`);
+      else alert(`${deletedIds.length} selected record${deletedIds.length === 1 ? "" : "s"} deleted.`);
+    } catch (err: any) {
+      alert(`Delete error: ${err.message}`);
+    } finally {
+      setBulkDeleting(false);
     }
   };
 
@@ -3708,7 +3750,17 @@ const AdvanceSettings: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1.5">Total Operators Available</label>
-                    <input type="number" min="0" value={formData.operator_availability_ctq} onChange={e => setFormData(p => ({ ...p, operator_availability_ctq: +e.target.value }))} className="w-full border px-4 py-2 rounded-lg bg-blue-50/30" />
+                    <input type="number" min="0" value={formData.operator_availability_ctq} readOnly className="w-full border px-4 py-2 rounded-lg bg-gray-100 cursor-not-allowed" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Buffer Manpower Required</label>
+                    <input type="number" min="0" value={formData.buffer_manpower_required_ctq} onChange={e => setFormData(p => ({ ...p, buffer_manpower_required_ctq: +e.target.value }))} className="w-full border rounded-lg px-4 py-2" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">Buffer Manpower Available</label>
+                    <input type="number" min="0" value={formData.buffer_manpower_availability_ctq} onChange={e => setFormData(p => ({ ...p, buffer_manpower_availability_ctq: +e.target.value }))} className="w-full border rounded-lg px-4 py-2" />
                   </div>
                 </div>
               </div>
@@ -3728,7 +3780,7 @@ const AdvanceSettings: React.FC = () => {
                       </div>
                       <div>
                         <label className="block text-xs text-gray-500 mb-1">Available</label>
-                        <input type="number" min="0" value={formData[`${lvl}_available` as keyof AdvanceSettingsData]} onChange={e => setFormData(p => ({ ...p, [`${lvl}_available`]: +e.target.value }))} className="w-full border rounded px-3 py-1.5" />
+                        <input type="number" min="0" value={formData[`${lvl}_available` as keyof AdvanceSettingsData]} onChange={e => handleAvailableChange(lvl as any, e.target.value)} className="w-full border rounded px-3 py-1.5" />
                       </div>
                     </div>
                   ))}
@@ -3780,10 +3832,32 @@ const AdvanceSettings: React.FC = () => {
         {/* ── Data List Tab ── */}
         {activeTab === "data-list" && (
           <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b bg-white">
+              <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={sortedData.length > 0 && sortedData.every(item => item.id != null && selectedRecordIds.includes(item.id))}
+                  onChange={event => setSelectedRecordIds(event.target.checked ? sortedData.flatMap(item => item.id == null ? [] : [item.id]) : [])}
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  aria-label="Select all records"
+                />
+                Select all records ({sortedData.length})
+              </label>
+              <button
+                type="button"
+                onClick={handleDeleteSelected}
+                disabled={!selectedRecordIds.length || bulkDeleting}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Trash2 size={16} />
+                {bulkDeleting ? "Deleting..." : `Delete selected (${selectedRecordIds.length})`}
+              </button>
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-4 py-3" aria-label="Select record"></th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase cursor-pointer" onClick={() => requestSort("location")}>
                       Location {sortConfig?.key === "location" && (sortConfig.direction === "asc" ? <ArrowUp className="inline" size={14} /> : <ArrowDown className="inline" size={14} />)}
                     </th>
@@ -3804,6 +3878,20 @@ const AdvanceSettings: React.FC = () => {
                 <tbody className="divide-y divide-gray-200">
                   {sortedData.map(item => (
                     <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-4">
+                        <input
+                          type="checkbox"
+                          checked={item.id != null && selectedRecordIds.includes(item.id)}
+                          onChange={event => {
+                            if (item.id == null) return;
+                            setSelectedRecordIds(current => event.target.checked
+                              ? [...new Set([...current, item.id!])]
+                              : current.filter(id => id !== item.id));
+                          }}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          aria-label={`Select record ${formatMonthYear(item.month_year)}`}
+                        />
+                      </td>
                       <td className="px-6 py-4">
                         <div className="font-medium">{allFactoriesMap[item.factory || 0] || "—"}</div>
                         <div className="text-sm text-gray-500">{allDepartmentsMap[item.department || 0] || "—"}</div>
