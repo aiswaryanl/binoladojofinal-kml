@@ -612,6 +612,16 @@ class MasterTableSerializer(serializers.ModelSerializer):
             'phone':           {'required': False, 'allow_null': True, 'allow_blank': True},
         }
 
+    def validate(self, attrs):
+        # Department is mandatory: a new master-table employee cannot be created
+        # without one, and an update cannot blank it out.
+        if self.instance is None or 'department' in self.initial_data:
+            if not attrs.get('department'):
+                raise serializers.ValidationError(
+                    {'department': 'Department is required.'}
+                )
+        return attrs
+
     def to_representation(self, instance):
         ret = super().to_representation(instance)
         # Convert None → '' for frontend

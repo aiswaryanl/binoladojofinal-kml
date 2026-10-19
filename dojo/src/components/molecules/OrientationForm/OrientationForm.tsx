@@ -252,7 +252,7 @@ export const OrientationForm: React.FC<OrientationFormProps> = ({
   const departmentOptions = [
     {
       value: '',
-      label: loading ? 'Loading departments...' : 'Select Department (Optional)',
+      label: loading ? 'Loading departments...' : '--- Select Department ---',
     },
     ...departments.map((dept) => ({
       value: dept.department_id.toString(),
@@ -345,6 +345,7 @@ export const OrientationForm: React.FC<OrientationFormProps> = ({
             value={orientationFields.department || ''}
             onChange={(e) => handleInputChange('department', e.target.value)}
             icon={<Icon icon={Building} className="text-gray-400" />}
+            required
           />
 
           <SelectField

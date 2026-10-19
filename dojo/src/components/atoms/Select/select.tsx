@@ -24,6 +24,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
                 id={id}
                 value={value}
                 onChange={onChange}
+                required={required}
                 className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors appearance-none bg-white"
             >
                 {options.map(option => (
