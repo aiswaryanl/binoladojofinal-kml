@@ -2404,7 +2404,13 @@ class ScoreSerializer(serializers.ModelSerializer):
         ]
 
     def get_name(self, obj):
-        return f"{obj.employee.first_name} {obj.employee.last_name}"
+        if not obj.employee:
+            return "N/A"
+        parts = [
+            str(obj.employee.first_name or "").strip(),
+            str(obj.employee.last_name or "").strip(),
+        ]
+        return " ".join(p for p in parts if p) or obj.employee.emp_id
 
     def get_department(self, obj):
         print(f"Score.department: {obj.department}")
@@ -2439,7 +2445,13 @@ class TestSessionSerializer(serializers.ModelSerializer):
         ]
 
     def get_employee_name(self, obj):
-        return f"{obj.employee.first_name} {obj.employee.last_name}"
+        if not obj.employee:
+            return "N/A"
+        parts = [
+            str(obj.employee.first_name or "").strip(),
+            str(obj.employee.last_name or "").strip(),
+        ]
+        return " ".join(p for p in parts if p) or obj.employee.emp_id
 
 
 class SimpleScoreSerializer(serializers.Serializer):
