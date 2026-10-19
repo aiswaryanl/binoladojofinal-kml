@@ -46,6 +46,13 @@ export const OrientationFeedbackModal: React.FC<OrientationFeedbackModalProps> =
   // 2. SAVE TO MASTER TABLE
   // ------------------------------------------------------------------
   const handleSave = async () => {
+    if (!orientationFields.department) {
+      const msg = 'Please select a department before saving';
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
+
     setLoading(true);
     setError(undefined);
 
@@ -122,7 +129,13 @@ export const OrientationFeedbackModal: React.FC<OrientationFeedbackModalProps> =
   // ------------------------------------------------------------------
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSave();
+        }}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+      >
 
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-2xl">
@@ -149,9 +162,15 @@ export const OrientationFeedbackModal: React.FC<OrientationFeedbackModalProps> =
 
         {/* Footer */}
         <div className="border-t bg-gray-50 rounded-b-2xl px-6 py-4">
-          <ModalFooter onClose={onClose} onSave={handleSave} loading={loading} />
+          <ModalFooter
+            onClose={onClose}
+            onSave={handleSave}
+            loading={loading}
+            saveDisabled={!orientationFields.department}
+            saveType="submit"
+          />
         </div>
-      </div>
+      </form>
     </div>
   );
 };
