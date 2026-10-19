@@ -11896,8 +11896,15 @@ class SkillMatrixViewSet(viewsets.ModelViewSet):
         # --- SERIALIZATION ---
         data = []
         for emp in candidates:
-            # Safe attribute access
-            name = getattr(emp, 'name', None) or f"{getattr(emp, 'first_name', '')} {getattr(emp, 'last_name', '')}".strip()
+            # Safe attribute access (last_name/first_name may be NULL - never render "None")
+            name = getattr(emp, 'name', None)
+            if not name:
+                name = ' '.join(
+                    part for part in (
+                        str(getattr(emp, 'first_name', '') or '').strip(),
+                        str(getattr(emp, 'last_name', '') or '').strip(),
+                    ) if part
+                ) or f"EMP-{emp.pk}"
             
             section = getattr(emp, 'section', None)
             if not section and hasattr(emp, 'department') and emp.department:
