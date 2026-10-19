@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Mail, Phone, User as UserIcon, Trash2 } from 'lucide-react';
 import type { User } from '../../constants/types';
+import { API_ENDPOINTS } from '../../constants/api';
 import { Icon } from '../../atoms/LucidIcons/LucidIcons';
 import { StatusBadge } from '../../atoms/StatusBadge/StatusBadge';
 
@@ -9,6 +10,46 @@ interface UserTableRowProps {
   onRowClick: (user: User) => void;
   onDelete: (tempId: string) => void;
 }
+
+// The API returns media paths as relative URLs (e.g. /media/user_images/x.jpg).
+// This page is served from the Vite dev server on :3000 while Django serves the
+// media on :8000, so a bare relative path would resolve against the wrong host.
+// Same pattern as TrainingOptionsPage.
+const resolveMediaUrl = (path: string): string => {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  if (path.startsWith('/media/')) return `${API_ENDPOINTS.BASE_URL}${path}`;
+  return `${API_ENDPOINTS.BASE_URL}/media/${path}`;
+};
+
+const UserAvatar: React.FC<{ user: User }> = ({ user }) => {
+  const [failed, setFailed] = useState(false);
+  const src = user.photo ? resolveMediaUrl(user.photo) : '';
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+
+  if (!src || failed) {
+    return (
+      <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+        <UserIcon className="h-5 w-5 text-blue-700" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-gray-100">
+      <img
+        src={src}
+        alt={`${user.first_name} ${user.last_name || ''}`.trim()}
+        className="h-full w-full object-cover"
+        loading="lazy"
+        onError={() => setFailed(true)}
+      />
+    </div>
+  );
+};
 
 export const UserTableRow: React.FC<UserTableRowProps> = ({ user, onRowClick, onDelete }) => {
   const formatDate = (dateString: string) => {
@@ -75,19 +116,7 @@ export const UserTableRow: React.FC<UserTableRowProps> = ({ user, onRowClick, on
       {/* User Name Column */}
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center">
-          {user.photo ? (
-            <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-gray-100">
-              <img
-                src={user.photo}
-                alt={`${user.first_name} ${user.last_name}`}
-                className="h-full w-full object-cover"
-              />
-            </div>
-          ) : (
-            <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-              <UserIcon className="h-5 w-5 text-blue-700" />
-            </div>
-          )}
+          <UserAvatar user={user} />
           <div className="ml-4">
             <div className="text-sm font-semibold text-gray-900">
               {user.first_name} {user.last_name}
@@ -97,21 +126,9 @@ export const UserTableRow: React.FC<UserTableRowProps> = ({ user, onRowClick, on
         </div>
       </td>
 
-      {/* Photo Column - Simplified */}
+      {/* Photo Column */}
       <td className="px-6 py-4 whitespace-nowrap">
-        {user.photo ? (
-          <div className="flex-shrink-0 h-10 w-10 rounded-full overflow-hidden bg-gray-100">
-            <img
-              src={user.photo}
-              alt={`${user.first_name} ${user.last_name}`}
-              className="h-full w-full object-cover"
-            />
-          </div>
-        ) : (
-          <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-            <UserIcon className="h-5 w-5 text-blue-700" />
-          </div>
-        )}
+        <UserAvatar user={user} />
       </td>
 
       {/* Email Column */}
