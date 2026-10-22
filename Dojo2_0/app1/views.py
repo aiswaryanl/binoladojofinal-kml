@@ -21806,7 +21806,7 @@ def get_hierarchy_filters(request):
 
 # ==============================================================================
 # VIEW 1: bifurcation_stats_view  →  /chart/bifurcation-statslive/
-# PLAN = distinct employees in SkillMatrix, counted at their assigned level
+# PLAN = saved L1-L4 required values from AdvanceSettings for the current month
 # AVAILABLE = live: biometric-present employees ∩ SkillMatrix employees,
 #             counted per corresponding skill level (L1-L4)
 # ==============================================================================
@@ -21815,19 +21815,32 @@ def bifurcation_stats_view(request):
     current_month = now.month
     current_year = now.year
 
-    skill_filters, _ = get_hierarchy_filters(request)
+    skill_filters, dashboard_filters = get_hierarchy_filters(request)
 
     # ------------------------------------------------------------------
-    # PLAN: distinct employees assigned to each level in SkillMatrix.
-    # Use the same hierarchy scope as actuals so the two figures compare like-for-like.
+    # PLAN: use the required values entered and saved in AdvanceSettings.
+    # The method page stores one line-level record per month and hierarchy.
+    dashboard_rows = AdvanceManpowerDashboard.objects.filter(
+        month=current_month,
+        year=current_year,
+        **dashboard_filters,
+    ).order_by('created_at')
+    unique_records = {}
+    for row in dashboard_rows:
+        key = (row.station_id, row.subline_id, row.line_id,
+               row.department_id, row.factory_id)
+        unique_records[key] = row
+
+    l1_required = sum(row.l1_required or 0 for row in unique_records.values())
+    l2_required = sum(row.l2_required or 0 for row in unique_records.values())
+    l3_required = sum(row.l3_required or 0 for row in unique_records.values())
+    l4_required = sum(row.l4_required or 0 for row in unique_records.values())
+
+    # Scope employee IDs to the selected hierarchy and split them by skill level.
     emp_ids_by_level = {1: set(), 2: set(), 3: set(), 4: set()}
-    level_rows = (
-        SkillMatrix.objects
-        .filter(**skill_filters)
-        .exclude(employee__emp_id__isnull=True)
-        .values_list('level_id', 'employee__emp_id')
-        .distinct()
-    )
+    level_rows = SkillMatrix.objects.filter(**skill_filters).exclude(
+        employee__emp_id__isnull=True
+    ).values_list('level_id', 'employee__emp_id').distinct()
     for level_id, emp_id in level_rows:
         if level_id in emp_ids_by_level and emp_id and emp_id.strip():
             emp_ids_by_level[level_id].add(emp_id.strip().zfill(8))
@@ -21845,11 +21858,6 @@ def bifurcation_stats_view(request):
         .values_list('pay_code', flat=True)
     )
     present_codes = {c.strip().zfill(8) for c in present_codes if c}
-
-    l1_required = len(emp_ids_by_level[1])
-    l2_required = len(emp_ids_by_level[2])
-    l3_required = len(emp_ids_by_level[3])
-    l4_required = len(emp_ids_by_level[4])
 
     l1_available = len(emp_ids_by_level[1] & present_codes)
     l2_available = len(emp_ids_by_level[2] & present_codes)
@@ -21935,9 +21943,9 @@ def current_manpower_card_view(request):
     current_month = now.month
     current_year = now.year
 
-    _, dashboard_filters = get_hierarchy_filters(request)
+    skill_filters, dashboard_filters = get_hierarchy_filters(request)
 
-    # PART B: REQUIRED
+    # These summary cards show this month's saved plan for the selected scope.
     dashboard_qs = AdvanceManpowerDashboard.objects.filter(
         month=current_month,
         year=current_year,
@@ -21959,11 +21967,29 @@ def current_manpower_card_view(request):
         total_stations            += (row.total_stations or 0)
         buffer_manpower_required  += (row.buffer_manpower_required or 0)
         buffer_manpower_available += (row.buffer_manpower_available or 0)
-        operators_available_total += (row.operators_available or 0)
         operators_required_total  += (
             (row.l1_required or 0) + (row.l2_required or 0) +
             (row.l3_required or 0) + (row.l4_required or 0)
         )
+
+    # Calculate availability for the selected summary period from uploaded
+    # biometric IDs matched to Skill Matrix employees in the selected hierarchy.
+    present_codes = {
+        code.strip().zfill(8)
+        for code in BiometricAttendance.objects.filter(
+            attendance_date__month=current_month,
+            attendance_date__year=current_year,
+            status__istartswith='P',
+        ).values_list('pay_code', flat=True)
+        if code and code.strip()
+    }
+    skill_employee_codes = {
+        emp_id.strip().zfill(8)
+        for emp_id in SkillMatrix.objects.filter(**skill_filters)
+        .values_list('employee__emp_id', flat=True)
+        if emp_id and emp_id.strip()
+    }
+    operators_available_total = len(present_codes & skill_employee_codes)
 
     return JsonResponse({
         "total_stations": total_stations,
