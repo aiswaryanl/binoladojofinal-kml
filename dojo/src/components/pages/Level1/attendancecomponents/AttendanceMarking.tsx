@@ -437,7 +437,7 @@ interface Batch {
   is_active: boolean;
 }
 
-const sortBatchesAscending = (items: Batch[]) => [...items].sort((a, b) => {
+const sortBatchesNewestFirst = (items: Batch[]) => [...items].sort((a, b) => {
   const dateOf = (batch: Batch) => {
     const match = batch.batch_id.match(/BATCH-(\d{2})-(\d{2})-(\d{4})/i);
     if (match) {
@@ -447,12 +447,12 @@ const sortBatchesAscending = (items: Batch[]) => [...items].sort((a, b) => {
     return new Date(batch.start_date || batch.created_at || 0).getTime();
   };
 
-  const dateDifference = dateOf(a) - dateOf(b);
+  const dateDifference = dateOf(b) - dateOf(a);
   if (dateDifference !== 0) return dateDifference;
 
-  // Use the trailing batch sequence to keep same-date batches in ascending order.
+  // For batches created on the same date, show the latest sequence first.
   const sequenceOf = (batchId: string) => Number(batchId.match(/-(\d+)$/)?.[1] || 0);
-  return sequenceOf(a.batch_id) - sequenceOf(b.batch_id);
+  return sequenceOf(b.batch_id) - sequenceOf(a.batch_id);
 });
 
 interface Employee { 
@@ -551,7 +551,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
         const res = await fetch(endpoint);
         if (!res.ok) throw new Error(`Failed to fetch ${viewMode} batches`);
         const data: Batch[] = await res.json();
-        setBatches(sortBatchesAscending(data));
+        setBatches(sortBatchesNewestFirst(data));
         setSelectedBatch('');
         setCompletionStatus(null);
       } catch (err: any) {
@@ -777,7 +777,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
             const endpoint = viewMode === 'active'
               ? 'http://127.0.0.1:8000/training-batches/active/'
               : 'http://127.0.0.1:8000/training-batches/past/';
-            fetch(endpoint).then(res => res.json()).then((data: Batch[]) => setBatches(sortBatchesAscending(data)));
+            fetch(endpoint).then(res => res.json()).then((data: Batch[]) => setBatches(sortBatchesNewestFirst(data)));
           }, 2000);
         }
       }
@@ -820,7 +820,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
       const batchRes = await fetch(endpoint);
       if (batchRes.ok) {
         const batchData = await batchRes.json();
-        setBatches(sortBatchesAscending(batchData));
+        setBatches(sortBatchesNewestFirst(batchData));
       }
       
       setShowCompletionModal(false);
@@ -856,7 +856,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
       const batchRes = await fetch(endpoint);
       if (batchRes.ok) {
         const batchData = await batchRes.json();
-        setBatches(sortBatchesAscending(batchData));
+        setBatches(sortBatchesNewestFirst(batchData));
         setViewMode('active');
       }
       
@@ -934,7 +934,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
                 disabled={loading}
               >
                 <option value="">{loading ? 'Loading...' : '-- Select Batch --'}</option>
-                {sortBatchesAscending(batches).map(b => (
+                {sortBatchesNewestFirst(batches).map(b => (
                   <option key={b.batch_id} value={b.batch_id}>
                     {b.batch_id} {!b.is_active && '(Completed)'}
                   </option>
