@@ -28,6 +28,7 @@ export interface UserInfo {
   firstName: string;
   lastName: string;
   tempId: string;
+  aadharNumber?: string | null;
   email: string;
   phoneNumber: string;
   sex: string;
@@ -140,6 +141,7 @@ export interface User {
   first_name: string;
   last_name: string;
   temp_id: string;
+  emp_id?: string | null;
   email: string;
   phone_number: string;
   sex: string;

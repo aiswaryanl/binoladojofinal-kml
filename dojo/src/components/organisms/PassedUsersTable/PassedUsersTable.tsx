@@ -12,6 +12,41 @@ import { EmptyState } from '../../molecules/EmptyState/EmptyState';
 import OrientationFeedbackModal from '../OrientationFeedbackModal/OrientationFeedbackModal';
 import { PageHeader } from '../../atoms/PageHeader/PageHeader';
 
+const deduplicateUsers = (records: User[]): User[] => {
+  const groups = new Map<string, User>();
+
+  for (const user of records) {
+    const aadhar = user.aadharNumber?.replace(/\D/g, '');
+    const employeeId = user.emp_id?.trim().toLowerCase();
+    const phone = user.phone_number?.replace(/\D/g, '');
+    const name = `${user.first_name || ''} ${user.last_name || ''}`.trim().toLowerCase();
+    // Prefer explicit identity fields; use name + phone only when those are absent.
+    const key = aadhar
+      ? `aadhar:${aadhar}`
+      : employeeId
+        ? `employee:${employeeId}`
+        : phone && name
+          ? `person:${phone}:${name}`
+          : `temp:${user.temp_id}`;
+    const previous = groups.get(key);
+
+    if (!previous) {
+      groups.set(key, user);
+      continue;
+    }
+
+    const checks = [...(previous.body_checks || []), ...(user.body_checks || [])]
+      .filter((check, index, all) => all.findIndex(item => item.id === check.id) === index)
+      .sort((a, b) => new Date(a.check_date).getTime() - new Date(b.check_date).getTime());
+    const currentScore = Number(Boolean(previous.is_added_to_master)) * 2 + Number(Boolean(previous.body_checks?.length));
+    const nextScore = Number(Boolean(user.is_added_to_master)) * 2 + Number(Boolean(user.body_checks?.length));
+    const preferred = nextScore > currentScore ? user : previous;
+    groups.set(key, { ...preferred, body_checks: checks });
+  }
+
+  return [...groups.values()];
+};
+
 
 const PassedUsersTable: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -54,8 +89,9 @@ const PassedUsersTable: React.FC = () => {
       }
       const data = await response.json();
       console.log(data);
-      setUsers(Array.isArray(data) ? data : [data]);
-      setFilteredUsers(Array.isArray(data) ? data : [data]);
+      const records = deduplicateUsers(Array.isArray(data) ? data : [data]);
+      setUsers(records);
+      setFilteredUsers(records);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error occurred');
     } finally {

@@ -170,6 +170,29 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 'aadharNumber': 'Aadhar number must be exactly 12 digits.'
             })
 
+        # A new temporary registration should reuse the existing identity
+        # instead of creating a second row for the same employee.
+        existing = UserRegistration.objects.all()
+        if aadhar_number:
+            existing = existing.filter(aadhar_number=aadhar_number)
+        else:
+            phone_number = data.get('phone_number')
+            first_name = (data.get('first_name') or '').strip()
+            last_name = (data.get('last_name') or '').strip()
+            if phone_number and first_name:
+                existing = existing.filter(
+                    phone_number=phone_number.strip(),
+                    first_name__iexact=first_name,
+                    last_name__iexact=last_name,
+                )
+            else:
+                existing = existing.none()
+
+        if existing.exists():
+            raise serializers.ValidationError({
+                'duplicate': 'An employee with this identity is already registered.'
+            })
+
         return data  
 
 # class UserUpdateSerializer(serializers.ModelSerializer):
@@ -385,7 +408,7 @@ class UserWithBodyCheckSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserRegistration
         fields = [
-            'first_name', 'last_name', 'temp_id', 'email', 'phone_number', 
+            'first_name', 'last_name', 'temp_id', 'emp_id', 'email', 'phone_number',
             'sex', 'created_at', 'is_active', 'photo','aadharNumber', 'employment_type', 'hasExperience',
             'experienceYears', 'companyOfExperience', 'body_checks','is_added_to_master', 'added_to_master_at'
         ]

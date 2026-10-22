@@ -5,6 +5,30 @@ import HumanBodyCheckSheet from "../HumanBodyCheckSheet/HumanBodyCheckSheet";
 import { humanBodyCheckService } from "../../hooks/ServiceApis";
 import type { UserInfo } from "../../constants/types";
 
+const deduplicateTempUsers = (users: UserInfo[]): UserInfo[] => {
+    const uniqueUsers = new Map<string, UserInfo>();
+
+    users.forEach((user) => {
+        const aadhar = user.aadharNumber?.replace(/\D/g, "");
+        const phone = user.phoneNumber?.replace(/\D/g, "");
+        const name = `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim().toLowerCase();
+        const identity = aadhar
+            ? `aadhar:${aadhar}`
+            : phone && name
+                ? `person:${phone}:${name}`
+                : `temp:${user.tempId}`;
+        const existing = uniqueUsers.get(identity);
+
+        // Keep the latest registration so the search opens the most recently
+        // updated temporary profile when duplicate records already exist.
+        if (!existing || new Date(user.updated_at).getTime() > new Date(existing.updated_at).getTime()) {
+            uniqueUsers.set(identity, user);
+        }
+    });
+
+    return [...uniqueUsers.values()];
+};
+
 
 
 const TempEmployeeSearch = () => {
@@ -25,7 +49,8 @@ const TempEmployeeSearch = () => {
                 setError("");
 
                 // Use service to fetch user info
-                const userData = await humanBodyCheckService.fetchTempUsers();
+                const responseData = await humanBodyCheckService.fetchTempUsers();
+                const userData = deduplicateTempUsers(Array.isArray(responseData) ? responseData : [responseData]);
 
                 // Filter users based on search term
                 const filtered = userData.filter((user: UserInfo) => {
