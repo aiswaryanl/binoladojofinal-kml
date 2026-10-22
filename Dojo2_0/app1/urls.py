@@ -449,6 +449,7 @@ urlpatterns = [
 
 
     path('chart/bifurcation-statslive/', bifurcation_stats_view, name='bifurcation_stats'),
+    path('employees/by-level/', employees_by_level_view, name='employees_by_level'),
     path('chart/total-stats/', total_manpower_stats_view, name='total_manpower_stats'),
     path('chart/absenteeism-trendlive/', AbsenteeismTrendView.as_view(), name='absenteeism-trend'),
     path('chart/current-stats/', views.current_manpower_card_view, name='current-manpower-stats'),

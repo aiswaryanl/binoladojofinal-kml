@@ -3419,18 +3419,19 @@ const AdvanceSettings: React.FC = () => {
     });
   };
 
-  const handleAvailableChange = (level: "l1" | "l2" | "l3" | "l4", value: string) => {
-    const num = Number(value) || 0;
-    setFormData(prev => {
-      const next = { ...prev, [`${level}_available`]: num };
-      next.operator_availability_ctq =
-        (next.l1_available || 0) +
-        (next.l2_available || 0) +
-        (next.l3_available || 0) +
-        (next.l4_available || 0);
-      return next;
-    });
-  };
+  // Available handler commented along with the manual Available inputs above.
+  // const handleAvailableChange = (level: "l1" | "l2" | "l3" | "l4", value: string) => {
+  //   const num = Number(value) || 0;
+  //   setFormData(prev => {
+  //     const next = { ...prev, [`${level}_available`]: num };
+  //     next.operator_availability_ctq =
+  //       (next.l1_available || 0) +
+  //       (next.l2_available || 0) +
+  //       (next.l3_available || 0) +
+  //       (next.l4_available || 0);
+  //     return next;
+  //   });
+  // };
 
   const handleEdit = (item: AdvanceSettingsData) => {
     setFormData(item);
@@ -3748,10 +3749,11 @@ const AdvanceSettings: React.FC = () => {
                     <label className="block text-sm font-medium mb-1.5">Total Operators Required</label>
                     <input type="number" readOnly value={formData.operator_required_ctq} className="w-full px-4 py-2 border bg-gray-100 cursor-not-allowed rounded-lg" />
                   </div>
-                  <div>
+                  {/* Available is no longer entered manually — Totals Available come from live biometric/skill data. Keep commented for future use. */}
+                  {/* <div>
                     <label className="block text-sm font-medium mb-1.5">Total Operators Available</label>
                     <input type="number" min="0" value={formData.operator_availability_ctq} readOnly className="w-full border px-4 py-2 rounded-lg bg-gray-100 cursor-not-allowed" />
-                  </div>
+                  </div> */}
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                   <div>
@@ -3778,10 +3780,11 @@ const AdvanceSettings: React.FC = () => {
                         <label className="block text-xs text-gray-500 mb-1">Required</label>
                         <input type="number" min="0" value={formData[`${lvl}_required` as keyof AdvanceSettingsData]} onChange={e => handleRequiredChange(lvl as any, e.target.value)} className="w-full border rounded px-3 py-1.5" />
                       </div>
-                      <div>
+                      {/* Available column commented — availability comes from biometric/skill data, not manual entry. Keep commented for future use. */}
+                      {/* <div>
                         <label className="block text-xs text-gray-500 mb-1">Available</label>
                         <input type="number" min="0" value={formData[`${lvl}_available` as keyof AdvanceSettingsData]} onChange={e => handleAvailableChange(lvl as any, e.target.value)} className="w-full border rounded px-3 py-1.5" />
-                      </div>
+                      </div> */}
                     </div>
                   ))}
                 </div>

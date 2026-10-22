@@ -21806,38 +21806,55 @@ def get_hierarchy_filters(request):
 
 # ==============================================================================
 # VIEW 1: bifurcation_stats_view  →  /chart/bifurcation-statslive/
-# PROBLEM WAS: 4 separate COUNT queries for L1/L2/L3/L4
-# FIX: 1 query using values + annotate grouping by level
+# PLAN = distinct employees in SkillMatrix, counted at their assigned level
+# AVAILABLE = live: biometric-present employees ∩ SkillMatrix employees,
+#             counted per corresponding skill level (L1-L4)
 # ==============================================================================
 def bifurcation_stats_view(request):
     now = timezone.now()
     current_month = now.month
     current_year = now.year
 
-    _, dashboard_filters = get_hierarchy_filters(request)
+    skill_filters, _ = get_hierarchy_filters(request)
 
     # ------------------------------------------------------------------
-    # SECTION B: REQUIRED  (AdvanceManpowerDashboard — same as before)
+    # PLAN: distinct employees assigned to each level in SkillMatrix.
+    # Use the same hierarchy scope as actuals so the two figures compare like-for-like.
+    emp_ids_by_level = {1: set(), 2: set(), 3: set(), 4: set()}
+    level_rows = (
+        SkillMatrix.objects
+        .filter(**skill_filters)
+        .exclude(employee__emp_id__isnull=True)
+        .values_list('level_id', 'employee__emp_id')
+        .distinct()
+    )
+    for level_id, emp_id in level_rows:
+        if level_id in emp_ids_by_level and emp_id and emp_id.strip():
+            emp_ids_by_level[level_id].add(emp_id.strip().zfill(8))
+
     # ------------------------------------------------------------------
-    dashboard_qs = AdvanceManpowerDashboard.objects.filter(
-        month=current_month,
-        year=current_year,
-        **dashboard_filters
-    ).order_by('created_at')
+    # AVAILABLE (LIVE): distinct present employees this month from
+    # BiometricAttendance, intersected with SkillMatrix employees of the
+    # corresponding level. Normalisation handles zero-padded device IDs.
+    # ------------------------------------------------------------------
+    present_codes = set(
+        BiometricAttendance.objects
+        .filter(attendance_date__month=current_month,
+                attendance_date__year=current_year)
+        .filter(status__istartswith='P')
+        .values_list('pay_code', flat=True)
+    )
+    present_codes = {c.strip().zfill(8) for c in present_codes if c}
 
-    unique_records = {}
-    for row in dashboard_qs:
-        key = (row.station_id, row.subline_id, row.line_id, row.department_id, row.factory_id)
-        unique_records[key] = row
+    l1_required = len(emp_ids_by_level[1])
+    l2_required = len(emp_ids_by_level[2])
+    l3_required = len(emp_ids_by_level[3])
+    l4_required = len(emp_ids_by_level[4])
 
-    l1_required = sum(r.l1_required or 0 for r in unique_records.values())
-    l2_required = sum(r.l2_required or 0 for r in unique_records.values())
-    l3_required = sum(r.l3_required or 0 for r in unique_records.values())
-    l4_required = sum(r.l4_required or 0 for r in unique_records.values())
-    l1_available = sum(r.l1_available or 0 for r in unique_records.values())
-    l2_available = sum(r.l2_available or 0 for r in unique_records.values())
-    l3_available = sum(r.l3_available or 0 for r in unique_records.values())
-    l4_available = sum(r.l4_available or 0 for r in unique_records.values())
+    l1_available = len(emp_ids_by_level[1] & present_codes)
+    l2_available = len(emp_ids_by_level[2] & present_codes)
+    l3_available = len(emp_ids_by_level[3] & present_codes)
+    l4_available = len(emp_ids_by_level[4] & present_codes)
 
     return JsonResponse({
         "l1_required": l1_required, "l1_available": l1_available,
@@ -21845,6 +21862,67 @@ def bifurcation_stats_view(request):
         "l3_required": l3_required, "l3_available": l3_available,
         "l4_required": l4_required, "l4_available": l4_available,
     })
+
+
+# ==============================================================================
+# VIEW 1b: employees_by_level_view  →  /employees/by-level/
+# Drill-down for the "Operators Required VS Available" card.
+# Returns ONLY biometric-present (uploaded) employees of the requested level:
+# present pay_codes this month ∩ SkillMatrix employees of that level.
+# Hierarchy filters (hq/factory/department/line/subline/station) honoured via
+# get_hierarchy_filters (skill branch).
+# ==============================================================================
+def employees_by_level_view(request):
+    try:
+        level = int(request.GET.get('level', 0))
+    except (TypeError, ValueError):
+        level = 0
+    if level not in (1, 2, 3, 4):
+        return JsonResponse({"error": "level must be one of 1..4"}, status=400)
+
+    now = timezone.now()
+    current_month = now.month
+    current_year = now.year
+
+    skill_filters, _ = get_hierarchy_filters(request)
+
+    present_codes = set(
+        BiometricAttendance.objects
+        .filter(attendance_date__month=current_month,
+                attendance_date__year=current_year)
+        .filter(status__istartswith='P')
+        .values_list('pay_code', flat=True)
+    )
+    present_codes = {c.strip().zfill(8) for c in present_codes if c}
+
+    rows = (
+        SkillMatrix.objects
+        .filter(level_id=level, **skill_filters)
+        .exclude(employee__emp_id__isnull=True)
+        .values_list('employee__emp_id',
+                     'employee__first_name',
+                     'employee__last_name')
+        .distinct()
+    )
+
+    seen = set()
+    employees = []
+    for emp_id, first_name, last_name in rows:
+        if not emp_id or not emp_id.strip():
+            continue
+        norm = emp_id.strip().zfill(8)
+        if norm not in present_codes or norm in seen:
+            continue
+        seen.add(norm)
+        name = f"{first_name or ''} {last_name or ''}".strip() or emp_id
+        employees.append({
+            "id": emp_id.strip(),
+            "name": name,
+            "level": level,
+        })
+
+    employees.sort(key=lambda e: e["name"])
+    return JsonResponse(employees, safe=False)
 
 
 # ==============================================================================
@@ -21927,36 +22005,62 @@ def total_manpower_stats_view(request):
     fy_end = target_fy_start + 1
     _, dashboard_filters = get_hierarchy_filters(request)
 
-    monthly_qs = (
+    # ------------------------------------------------------------------
+    # REQUIRED — saved 'operators_required' from dashboard records,
+    # as deduplicated rows (old logic: last created row per hierarchy key)
+    # ------------------------------------------------------------------
+    dashboard_rows = (
         AdvanceManpowerDashboard.objects
         .filter(
             Q(year=target_fy_start, month__gte=4) |
             Q(year=fy_end,          month__lte=3),
             **dashboard_filters
         )
-        .values('month', 'year')
-        .annotate(
-            total_required=Sum('operators_required'),
-            total_available=Sum('operators_available'),
-            attrition_rate=Avg('attrition_rate'),
-            oet_attrition=Avg('oet_attrition'),
-            associate_attrition=Avg('associate_attrition'),
-        )
+        .values('month', 'operators_required', 'attrition_rate',
+                'oet_attrition', 'associate_attrition',
+                'station_id', 'subline_id', 'line_id', 'department_id', 'factory_id')
+        .order_by('created_at')
     )
-    monthly_map = {
-        (row['month'], row['year']): row
-        for row in monthly_qs
-    }
+
+    unique_records = {}
+    for row in dashboard_rows:
+        key = (row['month'], row['station_id'], row['subline_id'],
+               row['line_id'], row['department_id'], row['factory_id'])
+        unique_records[key] = row
+
+    required_by_month = defaultdict(int)
+    for row in unique_records.values():
+        required_by_month[row['month']] += row['operators_required'] or 0
 
     # ------------------------------------------------------------------
-    # Return saved monthly required and available values from the dashboard records.
+    # AVAILABLE — OLD LOGIC (live): distinct present employees this month
+    # from BiometricAttendance  ∩  SkillMatrix employees (hierarchy filters)
     # ------------------------------------------------------------------
+    skill_filters, _ = get_hierarchy_filters(request)
+
+    date_from, date_to = get_fy_date_range(target_fy_start)
+
+    present_by_month = defaultdict(set)
+    for pay_code, month in (
+        BiometricAttendance.objects
+        .filter(attendance_date__gte=date_from, attendance_date__lte=date_to)
+        .exclude(status__istartswith='A')
+        .values_list('pay_code', 'attendance_date__month')
+    ):
+        if pay_code:
+            # Normalise: some device exports zero-pad the ID to 8 digits
+            present_by_month[month].add(pay_code.strip().zfill(8))
+
+    skill_emp_ids = set()
+    for emp_id in SkillMatrix.objects.filter(**skill_filters).values_list('employee__emp_id', flat=True):
+        if emp_id and emp_id.strip():
+            skill_emp_ids.add(emp_id.strip().zfill(8))
+
     monthly_data = []
     for month in range(1, 13):
         year = target_fy_start if month >= 4 else fy_end
-        month_data = monthly_map.get((month, year), {})
-        required = month_data.get('total_required', 0) or 0
-        available = month_data.get('total_available', 0) or 0
+        required = required_by_month.get(month, 0)
+        available = len(present_by_month.get(month, set()) & skill_emp_ids)
         monthly_data.append({
             "month": month,
             "year": year,
