@@ -437,14 +437,22 @@ interface Batch {
   is_active: boolean;
 }
 
-const sortBatchesNewestFirst = (items: Batch[]) => [...items].sort((a, b) => {
-  const createdAtDifference = new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-  if (createdAtDifference !== 0) return createdAtDifference;
+const sortBatchesAscending = (items: Batch[]) => [...items].sort((a, b) => {
+  const dateOf = (batch: Batch) => {
+    const match = batch.batch_id.match(/BATCH-(\d{2})-(\d{2})-(\d{4})/i);
+    if (match) {
+      const [, day, month, year] = match;
+      return new Date(Number(year), Number(month) - 1, Number(day)).getTime();
+    }
+    return new Date(batch.start_date || batch.created_at || 0).getTime();
+  };
 
-  // Older rows can share a date-only created_at value. Their trailing batch
-  // sequence provides a stable newest-first order for that day.
+  const dateDifference = dateOf(a) - dateOf(b);
+  if (dateDifference !== 0) return dateDifference;
+
+  // Use the trailing batch sequence to keep same-date batches in ascending order.
   const sequenceOf = (batchId: string) => Number(batchId.match(/-(\d+)$/)?.[1] || 0);
-  return sequenceOf(b.batch_id) - sequenceOf(a.batch_id);
+  return sequenceOf(a.batch_id) - sequenceOf(b.batch_id);
 });
 
 interface Employee { 
@@ -543,7 +551,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
         const res = await fetch(endpoint);
         if (!res.ok) throw new Error(`Failed to fetch ${viewMode} batches`);
         const data: Batch[] = await res.json();
-        setBatches(sortBatchesNewestFirst(data));
+        setBatches(sortBatchesAscending(data));
         setSelectedBatch('');
         setCompletionStatus(null);
       } catch (err: any) {
@@ -769,7 +777,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
             const endpoint = viewMode === 'active'
               ? 'http://127.0.0.1:8000/training-batches/active/'
               : 'http://127.0.0.1:8000/training-batches/past/';
-            fetch(endpoint).then(res => res.json()).then((data: Batch[]) => setBatches(sortBatchesNewestFirst(data)));
+            fetch(endpoint).then(res => res.json()).then((data: Batch[]) => setBatches(sortBatchesAscending(data)));
           }, 2000);
         }
       }
@@ -812,7 +820,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
       const batchRes = await fetch(endpoint);
       if (batchRes.ok) {
         const batchData = await batchRes.json();
-        setBatches(sortBatchesNewestFirst(batchData));
+        setBatches(sortBatchesAscending(batchData));
       }
       
       setShowCompletionModal(false);
@@ -848,7 +856,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
       const batchRes = await fetch(endpoint);
       if (batchRes.ok) {
         const batchData = await batchRes.json();
-        setBatches(sortBatchesNewestFirst(batchData));
+        setBatches(sortBatchesAscending(batchData));
         setViewMode('active');
       }
       
@@ -926,7 +934,7 @@ export default function AttendanceMarking({ onSuccess }: AttendanceMarkingProps)
                 disabled={loading}
               >
                 <option value="">{loading ? 'Loading...' : '-- Select Batch --'}</option>
-                {batches.map(b => (
+                {sortBatchesAscending(batches).map(b => (
                   <option key={b.batch_id} value={b.batch_id}>
                     {b.batch_id} {!b.is_active && '(Completed)'}
                   </option>
