@@ -1,7 +1,8 @@
-
+ 
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from .models import DailyProductionData, HumanBodyCheckSession, HumanBodyCheckSheet, HumanBodyQuestions, Level2QuantityOJTEvaluation, LevelColour, ManagementReview, MasterTable, OJTLevel2Quantity, User, UserRegistration
+from django.db.models import Q
 from django.contrib.auth import authenticate
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -170,27 +171,17 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
                 'aadharNumber': 'Aadhar number must be exactly 12 digits.'
             })
 
-        # A new temporary registration should reuse the existing identity
-        # instead of creating a second row for the same employee.
-        existing = UserRegistration.objects.all()
-        if aadhar_number:
-            existing = existing.filter(aadhar_number=aadhar_number)
-        else:
-            phone_number = data.get('phone_number')
-            first_name = (data.get('first_name') or '').strip()
-            last_name = (data.get('last_name') or '').strip()
-            if phone_number and first_name:
-                existing = existing.filter(
-                    phone_number=phone_number.strip(),
-                    first_name__iexact=first_name,
-                    last_name__iexact=last_name,
-                )
-            else:
-                existing = existing.none()
-
-        if existing.exists():
+        # Phone numbers must be unique: one registration per phone number.
+        phone_number = (data.get('phone_number') or '').strip()
+        if phone_number and UserRegistration.objects.filter(phone_number=phone_number).exists():
             raise serializers.ValidationError({
-                'duplicate': 'An employee with this identity is already registered.'
+                'phoneNumber': 'This phone number is already registered.'
+            })
+
+        # Aadhar numbers must also be unique when provided.
+        if aadhar_number and UserRegistration.objects.filter(aadhar_number=aadhar_number).exists():
+            raise serializers.ValidationError({
+                'aadharNumber': 'An employee with this Aadhar number is already registered.'
             })
 
         return data  
