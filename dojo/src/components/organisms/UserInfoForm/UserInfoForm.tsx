@@ -530,6 +530,21 @@ export const UserInfoForm: React.FC = () => {
             errorData.detail ||
             errorData.message ||
             (typeof errorData === 'object' ? Object.values(errorData).flat().join('\n') : String(errorData));
+
+          // Show phone-number uniqueness (or other field) errors on the field itself
+          const flatValue = (value: unknown): string | null => {
+            if (Array.isArray(value)) return value.join(' ');
+            if (typeof value === 'string' || typeof value === 'number') return String(value);
+            return null;
+          };
+          const phoneError = flatValue(errorData.phoneNumber) || flatValue(errorData.phone_number);
+          const aadharError = flatValue(errorData.aadharNumber);
+          if (phoneError) {
+            setErrors(prev => ({ ...prev, phoneNumber: phoneError }));
+          }
+          if (aadharError) {
+            setErrors(prev => ({ ...prev, aadharNumber: aadharError }));
+          }
         } catch {
           message = `Server returned status ${response.status}`;
         }

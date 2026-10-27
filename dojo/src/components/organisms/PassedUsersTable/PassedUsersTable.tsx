@@ -13,38 +13,78 @@ import OrientationFeedbackModal from '../OrientationFeedbackModal/OrientationFee
 import { PageHeader } from '../../atoms/PageHeader/PageHeader';
 
 const deduplicateUsers = (records: User[]): User[] => {
-  const groups = new Map<string, User>();
+  const normDigits = (value?: string | null): string => (value || '').replace(/\D/g, '');
+  const normName = (first?: string | null, last?: string | null): string =>
+    `${(first || '').trim()} ${(last || '').trim()}`.trim().toLowerCase();
 
-  for (const user of records) {
-    const aadhar = user.aadharNumber?.replace(/\D/g, '');
-    const employeeId = user.emp_id?.trim().toLowerCase();
-    const phone = user.phone_number?.replace(/\D/g, '');
-    const name = `${user.first_name || ''} ${user.last_name || ''}`.trim().toLowerCase();
-    // Prefer explicit identity fields; use name + phone only when those are absent.
-    const key = aadhar
-      ? `aadhar:${aadhar}`
-      : employeeId
-        ? `employee:${employeeId}`
-        : phone && name
-          ? `person:${phone}:${name}`
-          : `temp:${user.temp_id}`;
-    const previous = groups.get(key);
-
-    if (!previous) {
-      groups.set(key, user);
-      continue;
+  // Union-find so a person is merged when records share ANY identity
+  // (aadhar, emp_id, or phone + name), even if each record only carries
+  // a different subset of those identities.
+  const parent = new Map<number, number>();
+  const find = (i: number): number => {
+    let root = i;
+    while (parent.get(root) !== root) {
+      root = parent.get(root)!;
     }
+    while (parent.get(i) !== root) {
+      const next = parent.get(i)!;
+      parent.set(i, root);
+      i = next;
+    }
+    return root;
+  };
+  const union = (a: number, b: number) => {
+    const rootA = find(a);
+    const rootB = find(b);
+    if (rootA !== rootB) {
+      parent.set(rootB, rootA);
+    }
+  };
 
-    const checks = [...(previous.body_checks || []), ...(user.body_checks || [])]
+  records.forEach((_, i) => parent.set(i, i));
+
+  const buckets = new Map<string, number>();
+  const linkByIdentity = (key: string, index: number) => {
+    const previous = buckets.get(key);
+    if (previous === undefined) {
+      buckets.set(key, index);
+    } else {
+      union(previous, index);
+    }
+  };
+
+  records.forEach((user, i) => {
+    const aadhar = normDigits(user.aadharNumber);
+    const employeeId = user.emp_id?.trim().toLowerCase();
+    const phone = normDigits(user.phone_number);
+    const name = normName(user.first_name, user.last_name);
+    if (aadhar) linkByIdentity(`aadhar:${aadhar}`, i);
+    if (employeeId) linkByIdentity(`employee:${employeeId}`, i);
+    if (phone && name) linkByIdentity(`person:${phone}:${name}`, i);
+  });
+
+  const groups = new Map<number, User[]>();
+  records.forEach((user, i) => {
+    const root = find(i);
+    const group = groups.get(root);
+    if (group) {
+      group.push(user);
+    } else {
+      groups.set(root, [user]);
+    }
+  });
+
+  const score = (user: User): number =>
+    Number(Boolean(user.is_added_to_master)) * 2 + Number(Boolean(user.body_checks?.length));
+
+  return [...groups.values()].map(group => {
+    const preferred = group.reduce((best, user) => (score(user) > score(best) ? user : best), group[0]);
+    const checks = group
+      .flatMap(user => user.body_checks || [])
       .filter((check, index, all) => all.findIndex(item => item.id === check.id) === index)
       .sort((a, b) => new Date(a.check_date).getTime() - new Date(b.check_date).getTime());
-    const currentScore = Number(Boolean(previous.is_added_to_master)) * 2 + Number(Boolean(previous.body_checks?.length));
-    const nextScore = Number(Boolean(user.is_added_to_master)) * 2 + Number(Boolean(user.body_checks?.length));
-    const preferred = nextScore > currentScore ? user : previous;
-    groups.set(key, { ...preferred, body_checks: checks });
-  }
-
-  return [...groups.values()];
+    return { ...preferred, body_checks: checks };
+  });
 };
 
 
