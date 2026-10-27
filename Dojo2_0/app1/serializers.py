@@ -396,6 +396,7 @@ class HumanBodyCheckSessionSerializer(serializers.ModelSerializer):
 
 class UserWithBodyCheckSerializer(serializers.ModelSerializer):
     body_checks = serializers.SerializerMethodField()
+    created_at = serializers.SerializerMethodField()
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     phone_number = serializers.CharField()
@@ -412,6 +413,23 @@ class UserWithBodyCheckSerializer(serializers.ModelSerializer):
             'sex', 'created_at', 'is_active', 'photo','aadharNumber', 'employment_type', 'hasExperience',
             'experienceYears', 'companyOfExperience', 'body_checks','is_added_to_master', 'added_to_master_at'
         ]
+
+    def get_created_at(self, obj):
+        # Rows auto-created from MasterTable (bulk migration/sync) were stamped
+        # with the day the sync ran, which is not a real registration date.
+        # They are identifiable by having an emp_id from MasterTable but no
+        # signup-form data (no email, no aadhar). For those, show the
+        # employee's authoritative joining date instead of the sync timestamp.
+        is_auto_created = (
+            obj.emp_id
+            and not (obj.email or '').strip()
+            and not (obj.aadhar_number or '').strip()
+        )
+        if is_auto_created:
+            master = MasterTable.objects.filter(emp_id=obj.emp_id, date_of_joining__isnull=False).first()
+            if master:
+                return master.date_of_joining.isoformat()
+        return obj.created_at
 
     def get_body_checks(self, obj):
        
