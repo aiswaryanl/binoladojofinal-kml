@@ -2618,6 +2618,13 @@ interface ApiAdvanceManpowerData {
   associate_attrition: string;
 }
 
+// Overall attrition = average of OET & Associate, rounded to 2 decimals.
+const averageAttrition = (oet: number | string, associate: number | string): number => {
+  const oetCents = Math.round((Number(oet) || 0) * 100);
+  const assocCents = Math.round((Number(associate) || 0) * 100);
+  return Math.round((oetCents + assocCents) / 2) / 100;
+};
+
 // ── Attrition interfaces ──
 interface AttritionRecord {
   id?: number;
@@ -2796,14 +2803,12 @@ const AttritionSection: React.FC = () => {
     //   const payload = { ...attrForm, overall: attrForm.oet + attrForm.associate };
     //   const isEdit = !!attrForm.id;
     try {
-        const roundedOverall =
-  Math.round((attrForm.oet + attrForm.associate) * 100) / 100;
-
 const payload = {
   ...attrForm,
   oet: Math.round(attrForm.oet * 100) / 100,
   associate: Math.round(attrForm.associate * 100) / 100,
-  overall: roundedOverall,
+  // Overall = average of OET & Associate 
+  overall: averageAttrition(attrForm.oet, attrForm.associate),
 };
       const isEdit = !!attrForm.id;
 
@@ -2863,10 +2868,7 @@ const payload = {
     setSelectedFY(fy);
     fetchAttritionList(fy || undefined);
   };
-const overall =
-  Math.round(
-    (Number(attrForm.oet) + Number(attrForm.associate)) * 100
-  ) / 100;
+const overall = averageAttrition(attrForm.oet, attrForm.associate);
   return (
     <div className="bg-white rounded-xl shadow-sm border mt-10">
       {/* Header */}
@@ -3066,7 +3068,7 @@ const overall =
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Overall Attrition 
-                  <span className="ml-2 text-xs font-normal text-gray-400">(OET + Associate)</span>
+                  <span className="ml-2 text-xs font-normal text-gray-400">(Average of OET &amp; Associate)</span>
                 </label>
                 {/* <input
                   type="number"

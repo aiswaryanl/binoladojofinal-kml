@@ -14,6 +14,9 @@ interface InputProps {
   optional?: boolean;
   icon?: React.ReactNode;
   maxLength?: number;
+  min?: string;
+  max?: string;
+  readOnly?: boolean;
   className?: string;
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
@@ -32,6 +35,9 @@ export const Input: React.FC<InputProps> = ({
   optional = false,
   icon,
   maxLength,
+  min,
+  max,
+  readOnly = false,
   className = '',
   onChange,
 }) => {
@@ -58,6 +64,9 @@ export const Input: React.FC<InputProps> = ({
           value={value}
           disabled={disabled}
           maxLength={maxLength}
+          min={min}
+          max={max}
+          readOnly={readOnly}
           className={`${baseClasses} ${errorClasses} ${
             icon ? 'pl-10' : ''
           } ${className}`}

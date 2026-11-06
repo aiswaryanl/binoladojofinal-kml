@@ -68,6 +68,8 @@ interface OrientationFormProps {
   error?: string;
   userId: number; // <-- NEW: Pass from parent (after body check)
   onSaveSuccess?: () => void; // Optional: callback after save
+  /** Date of Joining came from the registration form (the batch was made from it): show it read-only */
+  dateOfJoiningLocked?: boolean;
 }
 
 // ------------------------------------------------------------------
@@ -118,6 +120,7 @@ export const OrientationForm: React.FC<OrientationFormProps> = ({
   error,
   userId,
   onSaveSuccess,
+  dateOfJoiningLocked = false,
 }) => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [linesByDept, setLinesByDept] = useState<Record<number, Line[]>>({});
@@ -331,6 +334,8 @@ export const OrientationForm: React.FC<OrientationFormProps> = ({
             id="dateOfJoining"
             value={orientationFields.date_of_joining || ''}
             onChange={(e) => handleInputChange('date_of_joining', e.target.value)}
+            readOnly={dateOfJoiningLocked}
+            className={dateOfJoiningLocked ? 'bg-gray-100 text-gray-600 cursor-not-allowed' : ''}
             required
             icon={<Icon icon={Calendar} className="text-gray-400" />}
           />

@@ -153,6 +153,7 @@ export interface User {
   photo?: string;
   is_added_to_master: boolean;
   added_to_master_at: string | null;
+  date_of_joining?: string | null; // from the registration form (YYYY-MM-DD)
   aadharNumber: string;
   employment_type: string;
   hasExperience: boolean;

@@ -136,9 +136,11 @@ const SkillMatrixTable: React.FC<SkillMatrixTableProps> = ({
         try {
             setSkillMatrixLoading(true);
             setSkillMatrixError(null);
-            let url = `${API_BASE_URL}/skill-matrix/`;
+            // hide_superseded_general=1 → backend hides the "General" Level 1 row
+            // for operators who already reached Level 2+ on any station.
+            let url = `${API_BASE_URL}/skill-matrix/?hide_superseded_general=1`;
             if (stationId) {
-                url = `${API_BASE_URL}/skill-matrix/by_station/?station_id=${stationId}`;
+                url = `${API_BASE_URL}/skill-matrix/by_station/?station_id=${stationId}&hide_superseded_general=1`;
             }
             const response = await axios.get(url);
             setSkillMatrixData(response.data || []);

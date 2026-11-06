@@ -844,6 +844,27 @@ class TrainingBatch(models.Model):
     def __str__(self):
         return self.batch_id
 
+
+def training_batch_for_date(target_date):
+    """
+    Active training batch for a joining date ("BATCH-dd-mm-yyyy-<n>"), created if none exists.
+    """
+    date_str = target_date.strftime("%d-%m-%Y")
+    prefix = f"BATCH-{date_str}-"
+    batch = TrainingBatch.objects.filter(batch_id__startswith=prefix, is_active=True).order_by("batch_id").first()
+    if batch:
+        return batch
+    last_number = 0
+    for batch_id in TrainingBatch.objects.values_list("batch_id", flat=True):
+        try:
+            last_number = max(last_number, int(batch_id.rsplit("-", 1)[-1]))
+        except (TypeError, ValueError):
+            continue
+
+    batch, _ = TrainingBatch.objects.get_or_create(batch_id=f"{prefix}{last_number + 1}", defaults={"is_active": True})
+    return batch
+
+
 from datetime import datetime
 class UserRegistration(models.Model):
     SEX_CHOICES = [
@@ -883,6 +904,10 @@ class UserRegistration(models.Model):
     is_added_to_master = models.BooleanField(default=False)
     added_to_master_at = models.DateTimeField(null=True, blank=True)
 
+    # Entered on the Level 1 registration form. The training batch is made from this date
+    # (once, when the registration is created) and "Add to Master" reuses it read-only.
+    date_of_joining = models.DateField(null=True, blank=True)
+
 
     class Meta:
         ordering = ['-created_at']
@@ -894,37 +919,11 @@ class UserRegistration(models.Model):
         if not self.temp_id:
             self.temp_id = f"TEMP{uuid.uuid4().hex[:12].upper()}"
 
-        if not self.pk and not self.batch_id:  # assign a default batch only when none was provided
-            today = timezone.localdate()
-            date_str = today.strftime("%d-%m-%Y")
-
-            # Check if today's batch already exists
-            today_batch = TrainingBatch.objects.filter(
-                batch_id__startswith=f"BATCH-{date_str}-"
-            ).first()
-
-            if today_batch:
-                # Use today's existing batch
-                self.batch_id = today_batch.batch_id
-
-            else:
-                # Find the last used batch number across all days
-                last_batch = TrainingBatch.objects.order_by('-batch_id').first()
-
-                if last_batch:
-                    last_num = int(last_batch.batch_id.split('-')[-1])
-                    next_num = last_num + 1
-                else:
-                    next_num = 1
-
-                # Create new batch for today
-                new_batch_id = f"BATCH-{date_str}-{next_num}"
-                self.batch_id = new_batch_id
-
-                TrainingBatch.objects.create(
-                    batch_id=new_batch_id,
-                    is_active=True
-                )
+        if not self.pk and not self.batch_id:  # assign a batch only for a new registration
+            # Batch date = Date of Joining from the registration form (today if not given).
+            # Assigned once here and never moved later, so attendance stays in one batch.
+            target_date = self.date_of_joining or timezone.localdate()
+            self.batch_id = training_batch_for_date(target_date).batch_id
 
         super().save(*args, **kwargs)
 
@@ -5044,7 +5043,9 @@ class AttritionRecord(models.Model):
         self.associate = Decimal(self.associate).quantize(
             Decimal("0.01"), rounding=ROUND_HALF_UP
         )
-        self.overall = (self.oet + self.associate).quantize(
+        # Overall = AVERAGE of OET and Associate attrition.
+        # Previously this was the sum (oet + associate).
+        self.overall = ((self.oet + self.associate) / 2).quantize(
             Decimal("0.01"), rounding=ROUND_HALF_UP
         )
         super().save(*args, **kwargs)

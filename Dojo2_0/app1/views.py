@@ -11794,6 +11794,36 @@ from rest_framework.response import Response
 from .models import SkillMatrix, MasterTable, Score 
 from .serializers import SkillMatrixSerializer
 
+# ==============================================================================
+# SUPERSEDED "GENERAL" LEVEL 1
+# Every new operator gets a Level 1 SkillMatrix row on the "General" station
+# after the first evaluation. Once the operator reaches Level 2+ on ANY station,
+# that General Level 1 row is superseded: it is hidden from the Skill Matrix
+# screens and ignored by the live manpower counts.
+# The row is NEVER deleted - Level 2 eligibility (eligible_employees) requires
+# an existing Level 1 SkillMatrix row.
+# ==============================================================================
+GENERAL_STATION_NAME = "General"
+
+
+def superseded_general_l1_ids():
+    """Subquery of SkillMatrix ids: General-station Level 1 rows of operators
+    who already hold Level 2 or higher on any station.
+    Use as: queryset.exclude(id__in=superseded_general_l1_ids())"""
+    higher_level_employees = SkillMatrix.objects.filter(
+        level__level_id__gte=2
+    ).values('employee_id')
+    return SkillMatrix.objects.filter(
+        hierarchy__station__station_name=GENERAL_STATION_NAME,
+        level__level_id=1,
+        employee_id__in=higher_level_employees,
+    ).values('id')
+
+
+def _wants_hide_superseded(request):
+    return str(request.query_params.get("hide_superseded_general", "")).lower() in ("1", "true", "yes")
+
+
 class SkillMatrixViewSet(viewsets.ModelViewSet):
     queryset = SkillMatrix.objects.select_related(
         'employee',
@@ -11801,6 +11831,17 @@ class SkillMatrixViewSet(viewsets.ModelViewSet):
         'hierarchy__station',
         'level',).all()
     serializer_class = SkillMatrixSerializer
+
+    # List: ?hide_superseded_general=1 hides General Level 1 rows of operators
+    # who reached Level 2+ (used by the Skill Matrix screen).
+    def list(self, request, *args, **kwargs):
+        if not _wants_hide_superseded(request):
+            return super().list(request, *args, **kwargs)
+        queryset = self.filter_queryset(self.get_queryset()).exclude(
+            id__in=superseded_general_l1_ids()
+        )
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
     # Custom endpoint: filter by station_id
     @action(detail=False, methods=["get"])
@@ -11810,6 +11851,8 @@ class SkillMatrixViewSet(viewsets.ModelViewSet):
             return Response({"error": "station_id parameter is required"}, status=400)
 
         queryset = self.queryset.filter(hierarchy__station_id=station_id)
+        if _wants_hide_superseded(request):
+            queryset = queryset.exclude(id__in=superseded_general_l1_ids())
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
@@ -12213,7 +12256,6 @@ from rest_framework.response import Response
 # Make sure all your models and serializers are imported
 from .models import TrainingBatch, UserRegistration, TrainingAttendance, Days, MasterTable
 from .serializers import TrainingBatchSerializer, BatchAttendanceDetailSerializer, TrainingAttendanceSerializer
-from .signals import sync_name_to_registration
 
 # --- Active/Past Batch Views (Unchanged, but included for context) ---
 class ActiveTrainingBatchListView(generics.ListAPIView):
@@ -12224,11 +12266,8 @@ class ActiveTrainingBatchListView(generics.ListAPIView):
     serializer_class = TrainingBatchSerializer
 
     def get_queryset(self):
-        # Align existing registrations with the authoritative Master Table join
-        # date before returning the batches available for attendance.
-        for employee in MasterTable.objects.filter(date_of_joining__isnull=False).iterator():
-            sync_name_to_registration(MasterTable, employee)
-
+        # Read-only: the batch is set once at registration (from the Date of Joining), so
+        # nothing is re-synced from the Master Table here any more.
         return TrainingBatch.objects.filter(
             is_active=True,
             batch_id__in=UserRegistration.objects.exclude(batch_id__isnull=True).values("batch_id"),
@@ -12252,41 +12291,9 @@ class BatchAttendanceDetailView(APIView):
 
         users = UserRegistration.objects.filter(batch_id=batch_id)
         if not users.exists():
-            # Repair registrations that already have a matching MasterTable
-            # employee, using the employee's authoritative joining date.
-            parts = batch_id.split("-")
-            if len(parts) >= 5 and parts[0] == "BATCH":
-                try:
-                    joining_date = datetime.datetime.strptime("-".join(parts[1:4]), "%d-%m-%Y").date()
-                except ValueError:
-                    joining_date = None
-
-                if joining_date:
-                    employees = MasterTable.objects.filter(
-                        date_of_joining=joining_date
-                    ).exclude(emp_id__isnull=True)
-                    for employee in employees:
-                        registration = UserRegistration.objects.filter(emp_id=employee.emp_id).first()
-                        if registration:
-                            UserRegistration.objects.filter(emp_id=employee.emp_id).update(batch_id=batch_id)
-                        else:
-                            UserRegistration.objects.create(
-                                emp_id=employee.emp_id,
-                                first_name=employee.first_name,
-                                last_name=employee.last_name or "",
-                                email=employee.email or None,
-                                phone_number=employee.phone or "",
-                                sex=employee.sex if employee.sex in {"M", "F", "O"} else "M",
-                                batch_id=batch_id,
-                                is_added_to_master=True,
-                            )
-                    users = UserRegistration.objects.filter(batch_id=batch_id)
-
-            if not users.exists():
-                return Response(
-                    {"error": "No Master Table employees or registrations have this batch's joining date."},
-                    status=status.HTTP_404_NOT_FOUND,
-                )
+            # Batches only contain trainees registered into them; existing Master Table
+            # employees are not pulled in (that created duplicate registrations).
+            return Response({"error": "No users found for this batch."}, status=status.HTTP_404_NOT_FOUND)
 
         # Multiple registration records can share one permanent employee ID.
         # Keep the record with the most saved attendance so existing marks stay visible.
@@ -14998,7 +15005,7 @@ def Buffer_manpower_live(request):
 
         available_qs = SkillMatrix.objects.filter(
             employee__emp_id__in=present_pay_codes
-        )
+        ).exclude(id__in=superseded_general_l1_ids())
 
         # Apply Filters to SkillMatrix
         if hq_id and hq_id != 'null': available_qs = available_qs.filter(hierarchy__hq_id=hq_id)
@@ -16685,43 +16692,38 @@ class EmployeeCardDetailsView(APIView):
         rescheduled_sessions_data = []
 
         try:
-            emp_id = getattr(employee, 'emp_id', None)
-            temp_id = getattr(employee, 'temp_id', None)
-            user_record = None
+            from .registration_matching import find_registrations_for_employee
 
-            if temp_id and str(temp_id).strip():
-                try:
-                    user_record = UserRegistration.objects.get(temp_id__iexact=str(temp_id).strip())
-                except UserRegistration.DoesNotExist:
-                    pass
-                except UserRegistration.MultipleObjectsReturned:
-                    print(f"⚠️ Multiple users found for temp_id: {temp_id}")
+            # A person can have more than one registration (e.g. a duplicate made at
+            # "Add to Master"). .get() failed on those and the card showed no attendance,
+            # so collect the records of ALL this employee's registrations.
+            user_records = find_registrations_for_employee(employee)
 
-            if not user_record and emp_id and str(emp_id).strip():
-                try:
-                    user_record = UserRegistration.objects.get(emp_id__iexact=str(emp_id).strip())
-                except UserRegistration.DoesNotExist:
-                    pass
-                except UserRegistration.MultipleObjectsReturned:
-                    print(f"⚠️ Multiple users found for emp_id: {emp_id}")
-
-            if user_record:
-                print(f"✅ Matched UserRegistration record for emp_id: {emp_id} | temp_id: {temp_id}")
-
+            if user_records.exists():
                 # ── Attendance ─────────────────────────────────────────────
                 attendances = TrainingAttendance.objects.filter(
-                    user=user_record
+                    user__in=user_records
                 ).select_related(
                     'batch', 'user', 'day_number'
-                ).order_by(
-                    '-attendance_date', 'batch__batch_id', 'day_number'
+                ).order_by('-date_marked')
+
+                
+                unique_attendances = {}
+                for attendance in attendances:
+                    unique_attendances.setdefault((attendance.batch_id, attendance.day_number_id), attendance)
+                attendances = sorted(
+                    unique_attendances.values(),
+                    key=lambda a: (
+                        -(a.attendance_date.toordinal() if a.attendance_date else 0),
+                        a.batch_id or '',
+                        a.day_number_id or 0,
+                    ),
                 )
                 attendances_data = CardTrainingAttendanceSerializer(attendances, many=True).data
-                print(f"✅ Found {len(attendances_data)} attendance record(s)")
 
                 # ── Rescheduled Sessions ───────────────────────────────────
                 rescheduled_sessions = RescheduledSession.objects.filter(
-                    employee=user_record
+                    employee__in=user_records
                 ).select_related(
                     'employee', 'original_day', 'training_subtopic', 'batch'
                 ).order_by('-rescheduled_date', '-rescheduled_time')
@@ -16729,10 +16731,9 @@ class EmployeeCardDetailsView(APIView):
                 rescheduled_sessions_data = CardRescheduledSessionSerializer(
                     rescheduled_sessions, many=True
                 ).data
-                print(f"✅ Found {len(rescheduled_sessions_data)} rescheduled session(s)")
 
             else:
-                print(f"❌ No UserRegistration found for emp_id: {emp_id} | temp_id: {temp_id}")
+                print(f"❌ No UserRegistration found for emp_id: {employee.emp_id}")
 
         except Exception as e:
             print(f"❌ Attendance fetch error for {employee.emp_id}: {str(e)}")
@@ -17187,6 +17188,8 @@ class SkillMatrixExcelView(View):
         # We only want skill matrices that belong to the filtered hierarchies
         skill_matrices = SkillMatrix.objects.filter(
             hierarchy__in=hierarchies
+        ).exclude(
+            id__in=superseded_general_l1_ids()  # hide General L1 once operator has L2+
         ).select_related(
             'employee', 
             'hierarchy__station', 
@@ -20473,12 +20476,19 @@ class ExcelUploadView(APIView):
                 
                 card_no = str(card_no).strip()
 
+                # PayCode was identical to Card No, so fall back to Card No
+                # when PayCode is missing/blank (dashboards match on pay_code).
+                pay_code = row.get('PayCode')
+                pay_code = str(pay_code).strip() if pay_code is not None else ''
+                if not pay_code:
+                    pay_code = card_no
+
                 BiometricAttendance.objects.update_or_create(
                     card_no=card_no,
                     attendance_date=date_str,
                     defaults={
                         'sr_no': self.safe_int(row.get('Sr.No.')),
-                        'pay_code': row.get('PayCode'),
+                        'pay_code': pay_code,
                         'employee_name': row.get('Employee Name'),
                         'department': row.get('Department'),
                         'designation': row.get('Designation'),
@@ -21630,8 +21640,10 @@ class AdvanceDashboardUnifiedView(APIView):
             # Present pay codes
             present_pay_codes = biometric_qs.values_list("pay_code", flat=True).distinct()
             
-            available_qs = SkillMatrix.objects.filter(employee__emp_id__in=present_pay_codes)
-            
+            available_qs = SkillMatrix.objects.filter(
+                employee__emp_id__in=present_pay_codes
+            ).exclude(id__in=superseded_general_l1_ids())
+
             if hq_id and hq_id != "null": available_qs = available_qs.filter(hierarchy__hq_id=hq_id)
             if factory_id and factory_id != "null": available_qs = available_qs.filter(hierarchy__factory_id=factory_id)
             if department_id and department_id != "null": available_qs = available_qs.filter(hierarchy__department_id=department_id)
@@ -21804,6 +21816,27 @@ def get_hierarchy_filters(request):
     return skill_filters, dashboard_filters
 
 
+def highest_level_by_employee(skill_filters):
+  
+    rows = (
+        SkillMatrix.objects
+        .filter(**skill_filters)
+        .exclude(id__in=superseded_general_l1_ids())
+        .exclude(employee__emp_id__isnull=True)
+        .values_list('level_id', 'employee__emp_id',
+                     'employee__first_name', 'employee__last_name')
+    )
+    result = {}
+    for level_id, emp_id, first_name, last_name in rows:
+        if level_id not in (1, 2, 3, 4) or not emp_id or not emp_id.strip():
+            continue
+        norm = emp_id.strip().zfill(8)
+        current = result.get(norm)
+        if current is None or level_id > current[0]:
+            result[norm] = (level_id, first_name, last_name, emp_id.strip())
+    return result
+
+
 # ==============================================================================
 # VIEW 1: bifurcation_stats_view  →  /chart/bifurcation-statslive/
 # PLAN = saved L1-L4 required values from AdvanceSettings for the current month
@@ -21836,14 +21869,13 @@ def bifurcation_stats_view(request):
     l3_required = sum(row.l3_required or 0 for row in unique_records.values())
     l4_required = sum(row.l4_required or 0 for row in unique_records.values())
 
-    # Scope employee IDs to the selected hierarchy and split them by skill level.
+    # Scope employee IDs to the selected hierarchy and put each operator in
+    # exactly ONE level bucket: their highest level within the scope.
+    # (Previously an operator was counted in every level they held anywhere,
+    # so L1-L4 added up to more than the real present headcount.)
     emp_ids_by_level = {1: set(), 2: set(), 3: set(), 4: set()}
-    level_rows = SkillMatrix.objects.filter(**skill_filters).exclude(
-        employee__emp_id__isnull=True
-    ).values_list('level_id', 'employee__emp_id').distinct()
-    for level_id, emp_id in level_rows:
-        if level_id in emp_ids_by_level and emp_id and emp_id.strip():
-            emp_ids_by_level[level_id].add(emp_id.strip().zfill(8))
+    for norm, (level_id, _first, _last, _raw) in highest_level_by_employee(skill_filters).items():
+        emp_ids_by_level[level_id].add(norm)
 
     # ------------------------------------------------------------------
     # AVAILABLE (LIVE): distinct present employees this month from
@@ -21903,28 +21935,16 @@ def employees_by_level_view(request):
     )
     present_codes = {c.strip().zfill(8) for c in present_codes if c}
 
-    rows = (
-        SkillMatrix.objects
-        .filter(level_id=level, **skill_filters)
-        .exclude(employee__emp_id__isnull=True)
-        .values_list('employee__emp_id',
-                     'employee__first_name',
-                     'employee__last_name')
-        .distinct()
-    )
-
-    seen = set()
+    # an operator is listed only under
+    # their highest level within the selected scope, so this list always
+    # matches the level card count.
     employees = []
-    for emp_id, first_name, last_name in rows:
-        if not emp_id or not emp_id.strip():
+    for norm, (highest, first_name, last_name, raw_emp_id) in highest_level_by_employee(skill_filters).items():
+        if highest != level or norm not in present_codes:
             continue
-        norm = emp_id.strip().zfill(8)
-        if norm not in present_codes or norm in seen:
-            continue
-        seen.add(norm)
-        name = f"{first_name or ''} {last_name or ''}".strip() or emp_id
+        name = f"{first_name or ''} {last_name or ''}".strip() or raw_emp_id
         employees.append({
-            "id": emp_id.strip(),
+            "id": raw_emp_id,
             "name": name,
             "level": level,
         })
@@ -21986,6 +22006,7 @@ def current_manpower_card_view(request):
     skill_employee_codes = {
         emp_id.strip().zfill(8)
         for emp_id in SkillMatrix.objects.filter(**skill_filters)
+        .exclude(id__in=superseded_general_l1_ids())
         .values_list('employee__emp_id', flat=True)
         if emp_id and emp_id.strip()
     }
@@ -22078,7 +22099,9 @@ def total_manpower_stats_view(request):
             present_by_month[month].add(pay_code.strip().zfill(8))
 
     skill_emp_ids = set()
-    for emp_id in SkillMatrix.objects.filter(**skill_filters).values_list('employee__emp_id', flat=True):
+    for emp_id in (SkillMatrix.objects.filter(**skill_filters)
+                   .exclude(id__in=superseded_general_l1_ids())
+                   .values_list('employee__emp_id', flat=True)):
         if emp_id and emp_id.strip():
             skill_emp_ids.add(emp_id.strip().zfill(8))
 
@@ -22542,7 +22565,9 @@ class SkillMatrixDashboardUnifiedView(APIView):
             # 2. Fetch Skill Matrices (Optimized)
             # ---------------------------------------------------
             # Fetch all skill matrices
-            skill_matrix_query = SkillMatrix.objects.all().select_related(
+            skill_matrix_query = SkillMatrix.objects.exclude(
+                id__in=superseded_general_l1_ids()  # hide General L1 once operator has L2+
+            ).select_related(
                 'employee', 'level', 'hierarchy__station', 'hierarchy__department'
             )
             

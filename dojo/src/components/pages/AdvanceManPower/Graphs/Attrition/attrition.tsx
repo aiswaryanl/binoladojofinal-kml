@@ -760,7 +760,9 @@ const AttritionTrendChart: React.FC<AttritionProps> = ({
           monthMap[month] = {
             oet,
             associate,
-            overall: parseFloat((oet + associate).toFixed(2)),
+            // Use the overall saved by the backend (average of OET & Associate)
+            // so the chart always matches the Attrition Records page.
+            overall: parseFloat(String(record.overall)) || 0,
           };
         });
 

@@ -381,7 +381,7 @@
 
 
 import React, { useState } from 'react';
-import { User, Mail, Phone, VenusAndMars, IdCard, Building2, Briefcase } from 'lucide-react';
+import { User, Mail, Phone, VenusAndMars, IdCard, Building2, Briefcase, Calendar } from 'lucide-react';
 import { Input } from '../../atoms/Inputs/Inputs';
 import SelectField from '../../atoms/Select/select';
 import { saveUserInfo } from '../../hooks/ServiceApis';
@@ -404,7 +404,24 @@ interface UserInfo {
   hasExperience: boolean;
   experienceYears: string;
   companyOfExperience: string;
+  dateOfJoining: string; // YYYY-MM-DD – the training batch is made from this date
 }
+
+// Local date as YYYY-MM-DD (toISOString() would give the UTC date, which is a day off early in the morning IST)
+const toLocalDateString = (date: Date): string => {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+};
+
+// Date of Joining: today by default; may be up to 3 months (90 days) back, never in the future
+const DOJ_MAX_DAYS_BACK = 90;
+const getDojLimits = () => {
+  const today = new Date();
+  const earliest = new Date(today);
+  earliest.setDate(today.getDate() - DOJ_MAX_DAYS_BACK);
+  return { min: toLocalDateString(earliest), max: toLocalDateString(today) };
+};
 
 export const UserInfoForm: React.FC = () => {
   const navigate = useNavigate();
@@ -421,6 +438,7 @@ export const UserInfoForm: React.FC = () => {
     hasExperience: false,
     experienceYears: '',
     companyOfExperience: '',
+    dateOfJoining: getDojLimits().max,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -488,6 +506,16 @@ export const UserInfoForm: React.FC = () => {
       newErrors.aadharNumber = 'Aadhar number must be exactly 12 digits.';
     }
 
+    // Date of Joining – required
+    const dojLimits = getDojLimits();
+    if (!userInfo.dateOfJoining) {
+      newErrors.dateOfJoining = 'Date of Joining is required.';
+    } else if (userInfo.dateOfJoining > dojLimits.max) {
+      newErrors.dateOfJoining = 'Date of Joining cannot be a future date.';
+    } else if (userInfo.dateOfJoining < dojLimits.min) {
+      newErrors.dateOfJoining = 'Date of Joining cannot be more than 3 months ago.';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -519,6 +547,7 @@ export const UserInfoForm: React.FC = () => {
       formData.append('hasExperience', String(userInfo.hasExperience));
       formData.append('experienceYears', userInfo.experienceYears || '');
       formData.append('companyOfExperience', userInfo.companyOfExperience || '');
+      formData.append('dateOfJoining', userInfo.dateOfJoining);
 
       const response = await saveUserInfo(formData);
 
@@ -539,11 +568,15 @@ export const UserInfoForm: React.FC = () => {
           };
           const phoneError = flatValue(errorData.phoneNumber) || flatValue(errorData.phone_number);
           const aadharError = flatValue(errorData.aadharNumber);
+          const dojError = flatValue(errorData.dateOfJoining);
           if (phoneError) {
             setErrors(prev => ({ ...prev, phoneNumber: phoneError }));
           }
           if (aadharError) {
             setErrors(prev => ({ ...prev, aadharNumber: aadharError }));
+          }
+          if (dojError) {
+            setErrors(prev => ({ ...prev, dateOfJoining: dojError }));
           }
         } catch {
           message = `Server returned status ${response.status}`;
@@ -577,6 +610,7 @@ export const UserInfoForm: React.FC = () => {
       hasExperience: false,
       experienceYears: '',
       companyOfExperience: '',
+      dateOfJoining: getDojLimits().max,
     });
     setErrors({});
     setPhotoPreview(null);
@@ -663,7 +697,7 @@ export const UserInfoForm: React.FC = () => {
                 />
               </div>
 
-              {/* Aadhar */}
+              {/* Aadhar / Date of Joining */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <Input
                   label="Aadhar Number"
@@ -674,6 +708,18 @@ export const UserInfoForm: React.FC = () => {
                   optional
                   error={errors.aadharNumber}
                   icon={<IdCard className="h-5 w-5 text-gray-400" />}
+                />
+                <Input
+                  label="Date of Joining"
+                  type="date"
+                  id="dateOfJoining"
+                  value={userInfo.dateOfJoining}
+                  onChange={(e) => handleInputChange('dateOfJoining', e.target.value)}
+                  min={getDojLimits().min}
+                  max={getDojLimits().max}
+                  required
+                  error={errors.dateOfJoining}
+                  icon={<Calendar className="h-5 w-5 text-gray-400" />}
                 />
               </div>
 

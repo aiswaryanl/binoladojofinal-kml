@@ -16,6 +16,7 @@ import {
   Table,
   Download,
   ArrowLeft,
+  Search,
 } from "lucide-react";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
@@ -132,6 +133,8 @@ const ResultsExplorer: React.FC = () => {
   const [loadingBatches, setLoadingBatches] = useState(false);
   const [loadingScores, setLoadingScores] = useState(false);
 
+  const [employeeSearch, setEmployeeSearch] = useState("");
+
   const [error, setError] = useState<string | null>(null);
 
   // ===== Mode change handler =====
@@ -142,6 +145,7 @@ const ResultsExplorer: React.FC = () => {
     setSelectedSessionKey(null);
     setBatches([]);
     setScores([]);
+    setEmployeeSearch("");
   };
 
   // ===== Levels (mode-aware) =====
@@ -383,6 +387,18 @@ const ResultsExplorer: React.FC = () => {
 
     return { total, passed, avgMarks, topScore, passRate };
   }, [scores]);
+
+  // Search filter (name / employee ID).
+  const filteredScores = useMemo(() => {
+    const ranked = scores.map((s, index) => ({ s, rank: index + 1 }));
+    const term = employeeSearch.trim().toLowerCase();
+    if (!term) return ranked;
+    return ranked.filter(({ s }) => {
+      const name = String(s.name ?? "").toLowerCase();
+      const empId = String(s.employee_id ?? "").toLowerCase();
+      return name.includes(term) || empId.includes(term);
+    });
+  }, [scores, employeeSearch]);
 
   // ===== Handlers =====
   const handleViewSheet = (scoreId: number) => {
@@ -783,7 +799,7 @@ const ResultsExplorer: React.FC = () => {
 
         {/* Scores Table */}
         <section className="bg-white rounded-2xl shadow-xl border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+          <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-500" />
               <div>
@@ -798,6 +814,18 @@ const ResultsExplorer: React.FC = () => {
                     : "All individual attempts for this Level, Department and Station"}
                 </p>
               </div>
+            </div>
+
+            {/* Employee Search Filter */}
+            <div className="relative w-full sm:w-64 shrink-0">
+              <input
+                type="text"
+                placeholder="Search Name, Employee ID ..."
+                value={employeeSearch}
+                onChange={(e) => setEmployeeSearch(e.target.value)}
+                className="w-full appearance-none bg-gray-50 border border-gray-300 rounded-xl px-4 py-2 pl-10 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
@@ -814,6 +842,10 @@ const ResultsExplorer: React.FC = () => {
             ) : scores.length === 0 ? (
               <div className="text-center py-12 text-gray-500 text-sm">
                 No scores found for this selection.
+              </div>
+            ) : filteredScores.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 text-sm">
+                No employees match "{employeeSearch.trim()}".
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -844,7 +876,8 @@ const ResultsExplorer: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-100">
-                    {scores.map((s, index) => {
+                    {filteredScores.map(({ s, rank }) => {
+                      const index = rank - 1;
                       const isTop3 = index < 3;
                       const rankColors = [
                         "bg-yellow-500",

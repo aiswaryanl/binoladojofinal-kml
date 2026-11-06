@@ -117,13 +117,18 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     hasExperience = serializers.BooleanField(source='experience', default=False)
     experienceYears = serializers.IntegerField(source='experience_years', required=False, allow_null=True)
     companyOfExperience = serializers.CharField(source='company_of_experience', required=False, allow_null=True, allow_blank=True)
+    # The Level 1 training batch is made from this date
+    dateOfJoining = serializers.DateField(source='date_of_joining')
+
+    # How far back a Date of Joining may be (late entries of earlier joiners)
+    DOJ_MAX_DAYS_BACK = 90
 
     class Meta:
         model = UserRegistration
         fields = [
             'id', 'firstName', 'lastName', 'tempId', 'email', 'phoneNumber', 'sex',
             'created_at', 'updated_at', 'is_active', 'photo','aadharNumber', 'employment_type', 'hasExperience',
-            'experienceYears', 'companyOfExperience'
+            'experienceYears', 'companyOfExperience', 'dateOfJoining'
         ]
         extra_kwargs = {
             # 'email': {'required': False, 'allow_null': True},
@@ -132,6 +137,17 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
             'updated_at': {'read_only': True},
             'is_active': {'read_only': True},
         }
+
+    def validate_dateOfJoining(self, value):
+        from datetime import timedelta
+        from django.utils import timezone
+
+        today = timezone.localdate()
+        if value > today:
+            raise serializers.ValidationError('Date of Joining cannot be a future date.')
+        if value < today - timedelta(days=self.DOJ_MAX_DAYS_BACK):
+            raise serializers.ValidationError('Date of Joining cannot be more than 3 months ago.')
+        return value
 
     def create(self, validated_data):
         if validated_data.get('email') == '':
@@ -402,7 +418,8 @@ class UserWithBodyCheckSerializer(serializers.ModelSerializer):
         fields = [
             'first_name', 'last_name', 'temp_id', 'emp_id', 'email', 'phone_number',
             'sex', 'created_at', 'is_active', 'photo','aadharNumber', 'employment_type', 'hasExperience',
-            'experienceYears', 'companyOfExperience', 'body_checks','is_added_to_master', 'added_to_master_at'
+            'experienceYears', 'companyOfExperience', 'body_checks','is_added_to_master', 'added_to_master_at',
+            'date_of_joining',  # pre-fills (read-only) the Date of Joining in "Add to Master"
         ]
 
     def get_created_at(self, obj):

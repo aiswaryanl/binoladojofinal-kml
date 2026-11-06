@@ -14,12 +14,15 @@ export const OrientationFeedbackModal: React.FC<OrientationFeedbackModalProps> =
   onClose,
   onSave,
 }) => {
+  // Date of Joining given on the registration form (the training batch was made from it).
+  const registeredDoj: string = user.date_of_joining || '';
+
   // ------------------------------------------------------------------
   // 1. Form state – matches OrientationForm fields
   // ------------------------------------------------------------------
   const [orientationFields, setOrientationFields] = useState({
     emp_id: '',
-    date_of_joining: '',
+    date_of_joining: registeredDoj,
     birth_date: '',
     department: '',
     sub_department: '',
@@ -33,7 +36,7 @@ export const OrientationFeedbackModal: React.FC<OrientationFeedbackModalProps> =
   useEffect(() => {
     setOrientationFields({
       emp_id: '',
-      date_of_joining: '',
+      date_of_joining: registeredDoj,
       birth_date: '',
       department: '',
       sub_department: '',
@@ -153,6 +156,7 @@ export const OrientationFeedbackModal: React.FC<OrientationFeedbackModalProps> =
               setOrientationFields={setOrientationFields}
               error={error}
               userId={user.id}
+              dateOfJoiningLocked={!!registeredDoj}
               onSaveSuccess={() => {
                 // Optional: auto-close or extra logic
               }}
